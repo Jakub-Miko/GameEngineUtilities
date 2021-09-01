@@ -176,7 +176,7 @@ protected:
 	//Gets a table with a void pointer and a runtime identifier, then compares it with the runtime identifier of 
 	//the current type T, if types don't match an invalid argument exception is thrown.
 	//Only support type which can by runtime qualified(contain type_id_gen typedef) 
-	template<typename T, typename dummy = T::type_id_gen>
+	template<typename T, typename dummy = typename T::type_id_gen>
 	static void Get(lua_State* L, int index, T** ptr) {
 		Get(L, index, (void**)ptr, (int)TypeId<T>());
 	}
@@ -195,7 +195,7 @@ protected:
 
 	//Pushes object reference onto the stack as a table of void pointer and runtime type identifier
 	//Runtime type identifier can be used to maintain info on the type.
-	template<typename T, typename dummy = T::type_id_gen>
+	template<typename T, typename dummy = typename T::type_id_gen>
 	static void Set(lua_State* L, T* ref) {
 		Set(L, (void*)ref, (int)TypeId<T>());
 	}

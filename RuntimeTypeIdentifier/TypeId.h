@@ -10,7 +10,7 @@ struct SequentialIdGenerator {
 
 // TypeId class, its class can implicitly be converterd to the id of generator type  
 // Generator needs to be valid and needs to be supplied either as a template parameter or as a type_id_gen typedef of the Type
-template<typename T, typename Generator = T::type_id_gen, typename dummy = decltype(Generator::Id(), Generator::id_type())>
+template<typename T, typename Generator = typename T::type_id_gen, typename dummy = decltype(Generator::Id(), typename Generator::id_type())>
 struct TypeId {
 	using Type = typename Generator::id_type;
 
