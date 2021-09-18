@@ -18,9 +18,14 @@ public:
 
 	static void ThreadLoop(TaskQueue* queue, std::atomic<bool>* run);
 
-	void Submit(TaskDefinition task);
+	template<typename T,typename ... Args>
+	void Submit(T task,Args ... args) {
+		m_Queue->Push(MakeTask(task, args...));
+	}
 
 	void Run();
+
+	void Flush();
 
 	~TaskSystem();
 

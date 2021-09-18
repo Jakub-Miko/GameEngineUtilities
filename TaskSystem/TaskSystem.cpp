@@ -2,15 +2,16 @@
 #include <thread>
 #include <vector>
 
-void TaskSystem::Submit(TaskDefinition task) {
-	m_Queue->Push(task);
-}
-
 void TaskSystem::Run()
 {
 	for (auto& thread : m_Threads) {
 		thread = new std::thread(ThreadLoop,m_Queue.get(),&m_runnning);
 	}
+}
+
+void TaskSystem::Flush()
+{
+
 }
 
 TaskSystem::~TaskSystem()

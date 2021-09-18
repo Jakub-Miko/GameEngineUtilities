@@ -5,7 +5,7 @@ TaskQueue::TaskQueue()
 	
 }
 
-void TaskQueue::Push(TaskDefinition def)
+void TaskQueue::Push(TaskDefinition* def)
 {
 	std::lock_guard<std::mutex> lock(m_QueueMutex);
 	m_Queue.push(def);
@@ -17,7 +17,7 @@ TaskDefinition* TaskQueue::Pop()
 	if (m_Queue.empty())
 		return nullptr;
 
-	TaskDefinition* task = &m_Queue.front();
+	TaskDefinition* task = m_Queue.front();
 	m_Queue.pop();
 	return task;
 }
