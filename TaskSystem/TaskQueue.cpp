@@ -5,19 +5,27 @@ TaskQueue::TaskQueue()
 	
 }
 
-void TaskQueue::Push(TaskDefinition* def)
+void TaskQueue::Push(std::shared_ptr<TaskDefinition> def)
 {
-	std::lock_guard<std::mutex> lock(m_QueueMutex);
+	std::unique_lock<std::mutex> lock(m_QueueMutex);
 	m_Queue.push(def);
+	on_push.notify_one();
+	lock.unlock();
 }
 
-TaskDefinition* TaskQueue::Pop()
+std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 {
-	std::lock_guard<std::mutex> lock(m_QueueMutex);	
+	std::unique_lock<std::mutex> lock(m_QueueMutex);
+	on_push.wait(lock, [this]() {return !m_Queue.empty(); });
 	if (m_Queue.empty())
 		return nullptr;
 
-	TaskDefinition* task = m_Queue.front();
+	std::shared_ptr<TaskDefinition> task = m_Queue.front();
 	m_Queue.pop();
 	return task;
+}
+
+void TaskQueue::Flush()
+{
+	on_push.notify_all();
 }

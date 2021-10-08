@@ -1,9 +1,11 @@
+#pragma once
 #include <chrono>
 #include <thread>
 #include <sstream>
 #include <fstream>
 #include <mutex>
 #include <iomanip>
+#include <atomic>
 
 // Profiler class - singleton maintaining session and file writes to the .json file used with chrome://tracing
 
@@ -17,7 +19,7 @@ private:
 	};
 
 	std::mutex global_mutex;
-	bool is_active_session = false;
+	std::atomic<bool> is_active_session = false;
 	Session current_session;
 public:
 
@@ -76,12 +78,6 @@ public:
 		
 		std::stringstream ss;
 		
-		if (!current_session.first) {
-			ss << ","; 
-		}
-		else {
-			current_session.first = false;
-		}
 		ss << std::fixed << std::setprecision(3);
 		ss << "{\"name\": " << "\"" << results.name << "\",";
 		ss << "\"cat\": " << "\"Default\",";
@@ -94,7 +90,14 @@ public:
 		
 		{
 			std::lock_guard<std::mutex> guard(global_mutex);
-			current_session.output_stream << ss.str();
+			if (!current_session.first) {
+				current_session.output_stream << "," << ss.str();
+				
+			}
+			else {
+				current_session.output_stream << ss.str();
+				current_session.first = false;
+			}
 			current_session.output_stream.flush();
 		}
 	}
