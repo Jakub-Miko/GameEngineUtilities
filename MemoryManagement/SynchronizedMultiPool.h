@@ -3,16 +3,18 @@
 #include <thread>
 #include <mutex>
 
-template<typename Allocator = std::allocator<void>>
+template<typename Allocator = std::allocator<void>,bool stateful = false>
 class SynchronizedMultiPool : public std::pmr::memory_resource {
 public:
 	
+	using Pool_type = MultiPool<Allocator, stateful>;
+
 	struct MultiPoolThreadBinding {
 		std::thread::id thread_id;
-		MultiPool<Allocator> multipool;
+		Pool_type multipool;
 		
 
-		MultiPoolThreadBinding(std::thread::id thread_id, MultiPool<Allocator> multipool)
+		MultiPoolThreadBinding(std::thread::id thread_id, Pool_type multipool)
 			: thread_id(thread_id), multipool(multipool) {}
 
 		MultiPoolThreadBinding(std::thread::id thread_id,
@@ -72,14 +74,20 @@ public:
 
 	//Build deallocation list
 	virtual void do_deallocate(void* ptr, size_t size, size_t alignment) override {
-		for (auto& pool : m_MultiPools) {
-			if (pool.multipool.owns_ptr(ptr, size, alignment)) {
-				pool.multipool.deallocate(ptr, size, alignment);
-				return;
-			}
+		if constexpr (stateful) {
+			Pool_type::deallocate_stateful(ptr, size, alignment);
 		}
+		else {
 
-		assert(false); // Invalid Deallocation!
+			for (auto& pool : m_MultiPools) {
+				if (pool.multipool.owns_ptr(ptr, size, alignment)) {
+					pool.multipool.deallocate(ptr, size, alignment);
+					return;
+				}
+			}
+
+			assert(false); // Invalid Deallocation!
+		}
 	}
 
 	virtual bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {

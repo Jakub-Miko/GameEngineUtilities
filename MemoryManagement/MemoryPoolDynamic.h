@@ -4,7 +4,7 @@
 #include <vector>
 #include <cassert>
 
-template<typename Allocator = std::allocator<void>>
+template<typename Allocator = std::allocator<void>, bool stateful = false>
 class MemoryPool {
 
 	struct free_block {
@@ -19,37 +19,46 @@ public:
 	struct Chunk {
 		block_alloc_unit* base;
 		size_t capacity;
+		size_t block_size;
 		size_t available;
 		size_t next_available;
 		free_block* freelist_head;
+		void* chunk_data;
 	};
 
 private:
 
+	using ChunkPtr_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<Chunk*>;
 	using Chunk_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<Chunk>;
 	using Block_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<block_alloc_unit>;
 
 public:
 
-	MemoryPool(size_t block_size, size_t default_pool_size, const Allocator& alloc = Allocator())
-		: m_Chunks(alloc), upstream_alloc(alloc), next_chunk_size(default_pool_size / block_size), block_size(block_size)
+	MemoryPool(size_t block_size_a, size_t default_pool_size, const Allocator& alloc = Allocator())
+		: m_Chunks(alloc), upstream_alloc(alloc), next_chunk_size(default_pool_size / block_size), block_size(block_size_a)
 	{
-		Block_Allocator b_alloc = Block_Allocator(alloc);
+		Block_Allocator b_alloc(alloc);
+		Chunk_Allocator c_alloc(alloc);
 		block_alloc_unit* data = std::allocator_traits<Block_Allocator>::allocate(b_alloc, next_chunk_size * block_size);
+		Chunk* c_data = std::allocator_traits<Chunk_Allocator>::allocate(c_alloc, 1);
 		Chunk chunk;
 		chunk.base = data;
 		chunk.capacity = next_chunk_size;
 		chunk.next_available = 0;
+		chunk.block_size = block_size;
 		chunk.available = chunk.capacity;
 		chunk.freelist_head = nullptr;
-		m_Chunks.push_back(chunk);
+		chunk.chunk_data = nullptr;
+		std::allocator_traits<Chunk_Allocator>::construct(c_alloc, c_data, chunk);
+
+		m_Chunks.push_back(c_data);
 		next_chunk_size = next_chunk_size << 1;
-		current_chunk = &m_Chunks.back();
+		current_chunk = m_Chunks.back();
 	}
 
 
 	MemoryPool(const MemoryPool& ref) = delete;
-	MemoryPool(MemoryPool&& ref) 
+	MemoryPool(MemoryPool&& ref) noexcept
 		: m_Chunks(ref.m_Chunks), upstream_alloc(std::move(ref.upstream_alloc)), 
 		next_chunk_size (ref.next_chunk_size), current_chunk(ref.current_chunk), block_size(ref.block_size)
 	{
@@ -61,16 +70,13 @@ public:
 	MemoryPool& operator=(const MemoryPool& ref) = delete;
 
 	//TODO:!!!!!!!!!!!!!!!!!!      revise       !!!!!!!!!!!!!!!!!!!!!!!!!
-	MemoryPool& operator=(MemoryPool&& ref) {
-		
-		m_Chunks.clear();
-		
-		m_Chunks = ref.m_Chunks;
+	MemoryPool& operator=(MemoryPool&& ref) noexcept {	
+		release();
+		m_Chunks = std::move(ref.m_Chunks);
 		upstream_alloc = std::move(ref.upstream_alloc);
 		next_chunk_size = ref.next_chunk_size;
 		current_chunk = ref.current_chunk;
 		block_size = ref.block_size;
-
 
 		ref.m_Chunks.clear();
 		ref.next_chunk_size = 0;
@@ -86,20 +92,27 @@ public:
 			free_block* block = current_chunk->freelist_head;
 			current_chunk->freelist_head = block->next;
 			current_chunk->available--;
+			if constexpr (stateful) {
+				SetChunkState(reinterpret_cast<void*>(block), current_chunk);
+			}
 			return reinterpret_cast<void*>(block);
 		}
 
 		if (current_chunk->capacity > current_chunk->next_available) {
 			current_chunk->available--;
+			if constexpr (stateful) {
+				SetChunkState(reinterpret_cast<void*>(current_chunk->base + (current_chunk->next_available * block_size)),
+					current_chunk);
+			}
 			return reinterpret_cast<void*>(current_chunk->base + (current_chunk->next_available++ * block_size));
 		} 
 	
 		size_t max = 0;
 		Chunk* top = nullptr;
-		for (auto& chunk : m_Chunks) {
-			if (chunk.available > max) {
-				max = chunk.available;
-				top = &chunk;
+		for (auto chunk : m_Chunks) {
+			if (chunk->available > max) {
+				max = chunk->available;
+				top = chunk;
 			}
 		}
 		if (top) {
@@ -113,12 +126,21 @@ public:
 
 	}
 
+	static void SetChunkState(void* ptr,Chunk* chunk) {
+		*(reinterpret_cast<Chunk**>(static_cast<char*>(ptr) + 16) - 1) = chunk;
+		return;
+	}
+
+	static Chunk* GetChunkState(void* ptr, size_t size) {
+		Chunk* ptr2 = *(reinterpret_cast<Chunk**>(static_cast<char*>(ptr) + 16) - 1);
+		return ptr2;
+	}
 
 	void deallocate(void* ptr){
 		for (auto& chunk : m_Chunks) {
-			if (is_ptr_in_chunk(&chunk, ptr)) {
-				chunk.freelist_head = new(ptr) free_block(chunk.freelist_head);
-				chunk.available++;
+			if (is_ptr_in_chunk(chunk, ptr)) {
+				chunk->freelist_head = new(ptr) free_block(chunk->freelist_head);
+				chunk->available++;
 				return;
 			}
 		}
@@ -128,8 +150,8 @@ public:
 	}
 
 	bool owns_ptr(void* ptr) {
-		for (auto& chunk : m_Chunks) {
-			if (is_ptr_in_chunk(&chunk, ptr)) {
+		for (auto chunk : m_Chunks) {
+			if (is_ptr_in_chunk(chunk, ptr)) {
 				return true;
 			}
 		}
@@ -138,9 +160,9 @@ public:
 	}
 
 	Chunk* GetChunk(void* ptr) {
-		for (auto& chunk : m_Chunks) {
-			if (is_ptr_in_chunk(&chunk, ptr)) {
-				return &chunk;
+		for (auto chunk : m_Chunks) {
+			if (is_ptr_in_chunk(chunk, ptr)) {
+				return chunk;
 			}
 		}
 
@@ -148,17 +170,19 @@ public:
 	}
 
 	void clear() {
-		for (auto& chunk : m_Chunks) {
-			chunk.freelist_head = nullptr;
-			chunk.next_available = 0;
-			chunk.available = chunk.capacity;
+		for (auto chunk : m_Chunks) {
+			chunk->freelist_head = nullptr;
+			chunk->next_available = 0;
+			chunk->available = chunk.capacity;
 		}
 	}
 
 	void release() {
-		Block_Allocator b_alloc = Block_Allocator(upstream_alloc);
-		for (auto& chunk : m_Chunks) {
-			std::allocator_traits< Block_Allocator>::deallocate(b_alloc, chunk.base, chunk.capacity * block_size);
+		Block_Allocator b_alloc(upstream_alloc);
+		Chunk_Allocator c_alloc(upstream_alloc);
+		for (auto chunk : m_Chunks) {
+			std::allocator_traits<Block_Allocator>::deallocate(b_alloc, chunk->base, chunk->capacity * block_size);
+			std::allocator_traits<Chunk_Allocator>::deallocate(c_alloc, chunk, 1);
 		}
 		m_Chunks.clear();
 	}
@@ -167,33 +191,60 @@ public:
 		return size == block_size;
 	}
 
+	const Allocator& GetUpstreamAlloc() const {
+		return upstream_alloc;
+	}
+
+	static bool deallocate_form_chunk(void* ptr, Chunk* chunk) {
+		if (is_ptr_in_chunk(chunk, ptr)) {
+			chunk->freelist_head = new(ptr) free_block(chunk->freelist_head);
+			chunk->available++;
+			return true;
+		}
+		return false;
+	}
+
+	size_t GetBlockCapacity() {
+		if (stateful) {
+			return block_size - sizeof(void*);
+		}
+		else {
+			return block_size;
+		}
+	}
+
 private:
 	
 	Chunk* Allocate_Chunk() {
-		Block_Allocator b_alloc = Block_Allocator(upstream_alloc);
+		Block_Allocator b_alloc(upstream_alloc);
+		Chunk_Allocator c_alloc(upstream_alloc);
 		block_alloc_unit* data = std::allocator_traits<Block_Allocator>::allocate(b_alloc, next_chunk_size * block_size);
+		Chunk* c_data = std::allocator_traits<Chunk_Allocator>::allocate(c_alloc, 1);
 		Chunk chunk;
 		chunk.base = data;
 		chunk.capacity = next_chunk_size;
 		chunk.next_available = 0;
 		chunk.available = chunk.capacity;
+		chunk.block_size = block_size;
 		chunk.freelist_head = nullptr;
-		m_Chunks.push_back(chunk);
+		chunk.chunk_data = nullptr;
+		std::allocator_traits<Chunk_Allocator>::construct(c_alloc, c_data, chunk);
+		m_Chunks.push_back(c_data);
 		next_chunk_size = next_chunk_size << 1;
-		return &(m_Chunks.back());
+		return m_Chunks.back();
 	}
 
 	void MakeChunkCurrent(Chunk* chunk) {
 		current_chunk = chunk;
 	}
 
-	bool is_ptr_in_chunk(Chunk* chunk,void* ptr) {
-		return ptr >= reinterpret_cast<void*>(chunk->base) && ptr < reinterpret_cast<void*>(chunk->base + (chunk->capacity * block_size));
+	static bool is_ptr_in_chunk(Chunk* chunk,void* ptr) {
+		return ptr >= reinterpret_cast<void*>(chunk->base) && ptr < reinterpret_cast<void*>(chunk->base + (chunk->capacity * chunk->block_size));
 	}
 
 private:
 	size_t block_size;
-	std::vector<Chunk, Chunk_Allocator> m_Chunks;
+	std::vector<Chunk*, ChunkPtr_Allocator> m_Chunks;
 	size_t next_chunk_size;
 	const Allocator upstream_alloc;
 	Chunk* current_chunk;

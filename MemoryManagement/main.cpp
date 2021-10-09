@@ -16,7 +16,7 @@ int main() {
 		using data_type = typename long long;
 		
 		{
-			SynchronizedMultiPool<std::allocator<void>> mem;
+			SynchronizedMultiPool<std::allocator<void>,true> mem;
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
@@ -39,7 +39,7 @@ int main() {
 			}
 		}
 		{
-			SynchronizedMultiPool<std::allocator<void>> mem;
+			SynchronizedMultiPool<std::allocator<void>, true> mem;
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
@@ -153,8 +153,6 @@ int main() {
 				}
 			}
 		}
-
-
 	}
 	END_PROFILING();
 	_CrtDumpMemoryLeaks();

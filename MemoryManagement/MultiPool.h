@@ -4,26 +4,39 @@
 #include <type_traits>
 #include "MemoryPoolDynamic.h"
 
-template<typename Allocator = std::allocator<void>>
+template<typename Allocator = std::allocator<void>,bool stateful = false>
 class MultiPool : public std::pmr::memory_resource {
 	
-	using Pool_type = MemoryPool<Allocator>;
+	using Pool_type = MemoryPool<Allocator,stateful>;
+	using Pool_entry_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<Pool_type>;
 
 	struct Pool_entry {
 		size_t pool_size;
-		Pool_type pool;
+		Pool_type* pool;
 
-		Pool_entry(size_t pool_size, Pool_type pool) : pool_size(pool_size), pool(pool) {}
+		Pool_entry(size_t pool_size, Pool_type* pool) : pool_size(pool_size), pool(pool) {}
 		Pool_entry(size_t pool_size, size_t default_pool_size, const Allocator& alloc) 
-			: pool_size(pool_size), pool(pool_size, default_pool_size, alloc) {}
+			: pool_size(pool_size)
+		{
+			Pool_entry_Allocator al(alloc);
+			Pool_type* pool_ptr = std::allocator_traits<Pool_entry_Allocator>::allocate(al,1);
+			std::allocator_traits<Pool_entry_Allocator>::construct(al, pool_ptr, pool_size, default_pool_size, alloc);
+			pool = pool_ptr;
+		}
 
 		bool operator==(size_t size) const {
 			return pool_size == size;
 		}
 
+		~Pool_entry() {
+			Pool_entry_Allocator al(pool->GetUpstreamAlloc());
+			std::allocator_traits<Pool_entry_Allocator>::destroy(al, pool);
+			std::allocator_traits<Pool_entry_Allocator>::deallocate(al,pool,1);
+		}
+
 	};
 
-	using Pool_entry_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<Pool_entry>;
+	using Pool_handle_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<Pool_entry>;
 
 public:
 
@@ -61,38 +74,62 @@ public:
 			return pool->allocate();
 		}
 		else {
-			size_t size_req = get_closest_higher_pow_2(std::max(size, alignment));
+			size_t size_req = get_Required_size(size, alignment);
 			m_Pools.emplace_back(size_req, default_pool_chunk_size, upstream_alloc);
-			pool = &(m_Pools.back().pool);
+			pool = m_Pools.back().pool;
 			return pool->allocate();
 		}
 	}
 
 
 	virtual void do_deallocate(void* ptr, size_t size, size_t alignment) override {
-		Pool_type* pool = GetPool(size, alignment);
-		if (pool) {
-			return pool->deallocate(ptr);
+		if constexpr (stateful) {
+			deallocate_stateful(ptr, size, alignment);
 		}
-		
-		assert(false); //Invalid Deallocation
+		else {
+			Pool_type* pool = GetPool(size, alignment);
+			if (pool) {
+				return pool->deallocate(ptr);
+			}
+
+			assert(false); //Invalid Deallocation
+		}
 	}
 
 	virtual bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
 		return false;
 	}
 
+	static void deallocate_stateful(void* ptr, size_t size, size_t aligment) {
+		size_t req = get_Required_size(size, aligment);
+		auto chunk_st = Pool_type::GetChunkState(ptr, req);
+		if (!Pool_type::deallocate_form_chunk(ptr, chunk_st)) {
+			assert(false); //Invalid Chunk State
+		}
+	}
+
+
 	Pool_type* GetPool(size_t size, size_t alignment) {
-		size_t required_size = get_closest_higher_pow_2(std::max(size, alignment));
+		size_t required_size = get_Required_size(size, alignment);
+
 		auto pool = std::find(m_Pools.begin(), m_Pools.end(), required_size);
 		if (pool != m_Pools.end()) {
-			return &((*pool).pool);
+			return (*pool).pool;
 		}
 
 		return nullptr;
 	}
 
-	size_t get_closest_higher_pow_2(size_t num) {
+
+	static size_t get_Required_size(size_t size, size_t alignment) {
+		size_t num;
+		if constexpr (stateful) {
+			num = std::max(size + sizeof(void*), alignment);
+		}
+		else {
+			num = std::max(size, alignment);
+		}
+		
 		num--;
 
 		num|= num >> 1;
@@ -109,13 +146,13 @@ public:
 
 	void clear() {
 		for (auto& entry : m_Pools) {
-			entry.pool.clear();
+			entry.pool->clear();
 		}
 	}
 
 	void release() {
 		for (auto& entry : m_Pools) {
-			entry.pool.release();
+			entry.pool->release();
 		}
 		m_Pools.clear();
 	}
@@ -129,7 +166,7 @@ public:
 	}
 
 private:
-	std::vector<Pool_entry, Pool_entry_Allocator> m_Pools;
+	std::vector<Pool_entry, Pool_handle_Allocator> m_Pools;
 	Allocator upstream_alloc;
 	size_t default_pool_chunk_size;
 };
