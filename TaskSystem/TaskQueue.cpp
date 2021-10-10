@@ -29,3 +29,10 @@ void TaskQueue::Flush()
 {
 	on_push.notify_all();
 }
+
+void TaskQueue::Clear()
+{
+	std::lock_guard<std::mutex> lock(m_QueueMutex);
+	std::queue<std::shared_ptr<TaskDefinition>> empty;
+	m_Queue.swap(empty);
+}

@@ -8,9 +8,9 @@ TaskSystem* TaskSystem::instance = nullptr;
 
 TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 	m_Queue.reset(new TaskQueue);
-	m_Pool = new SynchronizedMultiPool(std::allocator<void>(), 32768);
+	m_Pool = new SynchronizedMultiPool<std::allocator<void>,true>(std::allocator<void>(), 32768);
 
-	if (!m_Props.num_of_threads) {
+	if (!m_Props.num_of_threads) { 
 		m_Props.num_of_threads = std::thread::hardware_concurrency() - 1;
 	}
 
@@ -42,7 +42,7 @@ TaskSystem::~TaskSystem()
 		thread->join();
 		delete thread;
 	}
-	m_Pool->release();
+	m_Queue->Clear();
 	delete m_Pool;
 }
 

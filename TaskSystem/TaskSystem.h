@@ -74,6 +74,6 @@ private:
 	std::atomic<bool> m_runnning = true;
 	std::unique_ptr<TaskQueue> m_Queue;
 	std::vector<std::thread*> m_Threads;
-	SynchronizedMultiPool<std::allocator<void>>* m_Pool;
+	SynchronizedMultiPool<std::allocator<void>,true>* m_Pool;
 	TaskSystemProps m_Props;
 };

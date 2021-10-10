@@ -28,11 +28,6 @@ class MultiPool : public std::pmr::memory_resource {
 			return pool_size == size;
 		}
 
-		~Pool_entry() {
-			Pool_entry_Allocator al(pool->GetUpstreamAlloc());
-			std::allocator_traits<Pool_entry_Allocator>::destroy(al, pool);
-			std::allocator_traits<Pool_entry_Allocator>::deallocate(al,pool,1);
-		}
 
 	};
 
@@ -151,8 +146,11 @@ public:
 	}
 
 	void release() {
+		Pool_entry_Allocator al(upstream_alloc);
 		for (auto& entry : m_Pools) {
 			entry.pool->release();
+			std::allocator_traits<Pool_entry_Allocator>::destroy(al, entry.pool);
+			std::allocator_traits<Pool_entry_Allocator>::deallocate(al, entry.pool, 1);
 		}
 		m_Pools.clear();
 	}

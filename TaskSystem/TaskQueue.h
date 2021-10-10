@@ -15,6 +15,8 @@ public:
 	
 	void Flush();
 
+	void Clear();
+
 private:
 	std::queue<std::shared_ptr<TaskDefinition>> m_Queue;
 	std::mutex m_QueueMutex;

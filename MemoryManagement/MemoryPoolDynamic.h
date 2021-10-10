@@ -127,12 +127,12 @@ public:
 	}
 
 	static void SetChunkState(void* ptr,Chunk* chunk) {
-		*(reinterpret_cast<Chunk**>(static_cast<char*>(ptr) + 16) - 1) = chunk;
+		*(reinterpret_cast<Chunk**>(static_cast<char*>(ptr) + chunk->block_size) - 1) = chunk;
 		return;
 	}
 
 	static Chunk* GetChunkState(void* ptr, size_t size) {
-		Chunk* ptr2 = *(reinterpret_cast<Chunk**>(static_cast<char*>(ptr) + 16) - 1);
+		Chunk* ptr2 = *(reinterpret_cast<Chunk**>(static_cast<char*>(ptr) + size) - 1);
 		return ptr2;
 	}
 

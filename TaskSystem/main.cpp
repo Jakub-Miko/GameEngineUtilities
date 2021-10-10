@@ -13,8 +13,6 @@
 
 void TaskTest(int milisecs) {
 	PROFILE("asdasd");
-	std::this_thread::sleep_for(std::chrono::milliseconds(milisecs));
-
 }
 
 void Sync() {
@@ -37,7 +35,7 @@ int main() {
 			TaskSystem::Initialize();
 
 			TaskSystem* system = TaskSystem::Get();
-			system->Initialize();
+			system->Initialize(TaskSystemProps{ 1 });
 			system->Run();
 			std::vector<std::shared_ptr<TaskDefinition>> m_funcs;
 			m_funcs.reserve(1200);
@@ -73,7 +71,6 @@ int main() {
 			};
 
 			system->Submit(tasks);
-
 			PROFILE("TaskSystem Submitted");
 
 			std::cin.get();
