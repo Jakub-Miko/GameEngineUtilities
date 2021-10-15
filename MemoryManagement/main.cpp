@@ -16,12 +16,12 @@ int main() {
 		using data_type = typename long long;
 		
 		{
-			SynchronizedMultiPool<std::allocator<void>,true> mem;
+			SynchronizedMultiPool<std::allocator<void>> mem(std::allocator<void>(),8192);
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
 			{
-				PROFILE("Alloc custom pool");
+				//PROFILE("Alloc custom pool");
 				for (int i = 0; i < 1024; i++) {
 					data_type* ptr = (data_type*)mem.allocate(sizeof(data_type), alignof(data_type));
 					*ptr = 0xffffffffffffffff;
@@ -32,14 +32,15 @@ int main() {
 				std::cout << *ptr << "\n";
 			}
 			{
-				PROFILE("Dealloc custom pool");
+				//PROFILE("Dealloc custom pool");
 				for (auto& ptr : m_ptrs) {
 					mem.deallocate(ptr, sizeof(data_type), alignof(data_type));
 				}
+				mem.FlushDeallocations();
 			}
 		}
 		{
-			SynchronizedMultiPool<std::allocator<void>, true> mem;
+			SynchronizedMultiPool<std::allocator<void>> mem(std::allocator<void>(), 8192);
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
@@ -59,6 +60,7 @@ int main() {
 				for (auto& ptr : m_ptrs) {
 					mem.deallocate(ptr, sizeof(data_type), alignof(data_type));
 				}
+				mem.FlushDeallocations();
 			}
 		}
 		{
@@ -67,7 +69,7 @@ int main() {
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
 			{
-				PROFILE("Alloc new");
+				//PROFILE("Alloc new");
 				for (int i = 0; i < 1024; i++) {
 					data_type* ptr = std::allocator_traits<std::allocator<data_type>>::allocate(alloc,1);
 					*ptr = 0xffffffffffffffff;
@@ -78,7 +80,7 @@ int main() {
 				std::cout << *ptr << "\n";
 			}
 			{
-				PROFILE("Dealloc new");
+				//PROFILE("Dealloc new");
 				for (auto& ptr : m_ptrs) {
 					delete ptr;
 				}
@@ -108,12 +110,12 @@ int main() {
 			}
 		}
 		{
-			std::pmr::unsynchronized_pool_resource mem;
+			std::pmr::synchronized_pool_resource mem;
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
 			{
-				PROFILE("Alloc pmr pool");
+				//PROFILE("Alloc pmr pool");
 				for (int i = 0; i < 1024; i++) {
 					data_type* ptr = (data_type*)mem.allocate(sizeof(data_type), alignof(data_type));
 					*ptr = 0xffffffffffffffff;
@@ -124,14 +126,14 @@ int main() {
 				std::cout << *ptr << "\n";
 			}
 			{
-				PROFILE("Dealloc pmr pool");
+				//PROFILE("Dealloc pmr pool");
 				for (auto& ptr : m_ptrs) {
 					mem.deallocate(ptr, sizeof(data_type), alignof(data_type));
 				}
 			}
 		}
 		{
-			std::pmr::unsynchronized_pool_resource mem;
+			std::pmr::synchronized_pool_resource mem;
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");

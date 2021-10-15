@@ -4,10 +4,11 @@
 #include <type_traits>
 #include "MemoryPoolDynamic.h"
 
-template<typename Allocator = std::allocator<void>,bool stateful = false>
+template<typename Allocator = std::allocator<void>,bool stateful = false, bool deffered_deallocation = false>
 class MultiPool : public std::pmr::memory_resource {
-	
-	using Pool_type = MemoryPool<Allocator,stateful>;
+public:
+	using Pool_type = MemoryPool<Allocator,stateful, deffered_deallocation>;
+private:
 	using Pool_entry_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<Pool_type>;
 
 	struct Pool_entry {
@@ -137,6 +138,13 @@ public:
 		num++;
 
 		return num;
+	}
+
+	//Should only be called in singlethread system, or from thread owning the pool!!!
+	void FlushDeallocations() {
+		for (auto& entry : m_Pools) {
+			entry.pool->FlushDeallocations();
+		}
 	}
 
 	void clear() {

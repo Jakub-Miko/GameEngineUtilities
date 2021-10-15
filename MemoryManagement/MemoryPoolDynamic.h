@@ -4,8 +4,10 @@
 #include <vector>
 #include <cassert>
 
-template<typename Allocator = std::allocator<void>, bool stateful = false>
+template<typename Allocator = std::allocator<void>, bool stateful = false, bool deffered_deallocation = false>
 class MemoryPool {
+
+	static_assert(!(deffered_deallocation == true && stateful == false), "deffered_deallocation is only supported for stateful pools.");
 
 	struct free_block {
 		free_block(free_block* ptr) : next(ptr) {}
@@ -16,15 +18,62 @@ class MemoryPool {
 
 public:
 
-	struct Chunk {
+	struct deallocation_list {
+		deallocation_list() : m_lock() {}
+		deallocation_list(const deallocation_list& ref) : m_lock(), head(ref.head), tail(ref.tail) {}
+		deallocation_list(deallocation_list&& ref) : head(ref.head), tail(ref.tail), m_lock(std::move(lock)) {}
+		deallocation_list& operator=(const deallocation_list& ref) = delete;
+		deallocation_list& operator=(deallocation_list&& ref) = delete;
+
+		void clear() {
+			std::lock_guard<std::mutex> lock(m_lock);
+			head = nullptr;
+			tail = nullptr; 
+			num_of_deallocs = 0;
+		}
+
+		void push_back(void* ptr) {
+			std::lock_guard<std::mutex> lock(m_lock);
+			new(ptr) free_block(head);
+			if (!head) {
+				tail = reinterpret_cast<free_block*>(ptr);
+			}
+			head = reinterpret_cast<free_block*>(ptr);
+			num_of_deallocs++;
+		}
+
+	size_t num_of_deallocs = 0;
+	free_block* head = nullptr;
+	free_block* tail = nullptr;
+	private:
+		std::mutex m_lock;
+	};
+
+	template<bool deffered>
+	struct Chunk_impl {
+		Chunk_impl() {}
 		block_alloc_unit* base;
 		size_t capacity;
 		size_t block_size;
 		size_t available;
 		size_t next_available;
 		free_block* freelist_head;
-		void* chunk_data;
 	};
+
+	template<>
+	struct Chunk_impl<true> {
+		
+		Chunk_impl() {}
+		block_alloc_unit* base;
+		size_t capacity;
+		size_t block_size;
+		size_t available;
+		size_t next_available;
+		free_block* freelist_head;
+		deallocation_list dealloc_list;
+	};
+
+	using Chunk = typename Chunk_impl<deffered_deallocation>;
 
 private:
 
@@ -48,7 +97,6 @@ public:
 		chunk.block_size = block_size;
 		chunk.available = chunk.capacity;
 		chunk.freelist_head = nullptr;
-		chunk.chunk_data = nullptr;
 		std::allocator_traits<Chunk_Allocator>::construct(c_alloc, c_data, chunk);
 
 		m_Chunks.push_back(c_data);
@@ -169,11 +217,30 @@ public:
 		return nullptr;
 	}
 
+	//Should only be called in singlethread system, or from thread owning the pool!!!
+	void FlushDeallocations() {
+		if constexpr (deffered_deallocation) {
+			for (auto chunk : m_Chunks) {
+				deallocation_list& dealloc_list = chunk->dealloc_list;
+				dealloc_list.tail->next = chunk->freelist_head;
+				chunk->freelist_head = dealloc_list.head;
+				chunk->available += dealloc_list.num_of_deallocs;
+				dealloc_list.clear();
+			}
+		}
+		else {
+			assert(false); //FlushDeallocations is only supported by deffered_deallocation enabled pool!!!
+		}
+	}
+
 	void clear() {
 		for (auto chunk : m_Chunks) {
 			chunk->freelist_head = nullptr;
 			chunk->next_available = 0;
 			chunk->available = chunk.capacity;
+			if constexpr (deffered_deallocation) {
+				chunk.dealloc_list.clear();
+			}
 		}
 	}
 
@@ -196,12 +263,18 @@ public:
 	}
 
 	static bool deallocate_form_chunk(void* ptr, Chunk* chunk) {
-		if (is_ptr_in_chunk(chunk, ptr)) {
-			chunk->freelist_head = new(ptr) free_block(chunk->freelist_head);
-			chunk->available++;
+		if constexpr (deffered_deallocation) {
+			chunk->dealloc_list.push_back(ptr);
 			return true;
 		}
-		return false;
+		else {
+			if (is_ptr_in_chunk(chunk, ptr)) {
+				chunk->freelist_head = new(ptr) free_block(chunk->freelist_head);
+				chunk->available++;
+				return true;
+			}
+			return false;
+		}
 	}
 
 	size_t GetBlockCapacity() {
@@ -227,7 +300,6 @@ private:
 		chunk.available = chunk.capacity;
 		chunk.block_size = block_size;
 		chunk.freelist_head = nullptr;
-		chunk.chunk_data = nullptr;
 		std::allocator_traits<Chunk_Allocator>::construct(c_alloc, c_data, chunk);
 		m_Chunks.push_back(c_data);
 		next_chunk_size = next_chunk_size << 1;

@@ -3,18 +3,19 @@
 #include <thread>
 #include <mutex>
 
-template<typename Allocator = std::allocator<void>,bool stateful = false>
+template<typename Allocator = std::allocator<void>, bool owning_thread_direct_deallocate = true>
 class SynchronizedMultiPool : public std::pmr::memory_resource {
 public:
 	
-	using Pool_type = MultiPool<Allocator, stateful>;
+	using MultiPool_type = typename MultiPool<Allocator, true, true>;
+	using Pool_type = typename MultiPool_type::Pool_type;
 
 	struct MultiPoolThreadBinding {
 		std::thread::id thread_id;
-		Pool_type multipool;
+		MultiPool_type multipool;
 		
 
-		MultiPoolThreadBinding(std::thread::id thread_id, Pool_type multipool)
+		MultiPoolThreadBinding(std::thread::id thread_id, MultiPool_type multipool)
 			: thread_id(thread_id), multipool(multipool) {}
 
 		MultiPoolThreadBinding(std::thread::id thread_id,
@@ -73,25 +74,27 @@ public:
 	}
 
 	//Build deallocation list
+	//TODO: Add DirectDeallocation
 	virtual void do_deallocate(void* ptr, size_t size, size_t alignment) override {
-		if constexpr (stateful) {
-			Pool_type::deallocate_stateful(ptr, size, alignment);
+		if constexpr (owning_thread_direct_deallocate) {
+			MultiPool_type::deallocate_stateful(ptr, size, alignment); // Rework !!!!!!!!!!!!!!!!!
 		}
 		else {
-
-			for (auto& pool : m_MultiPools) {
-				if (pool.multipool.owns_ptr(ptr, size, alignment)) {
-					pool.multipool.deallocate(ptr, size, alignment);
-					return;
-				}
-			}
-
-			assert(false); // Invalid Deallocation!
+			MultiPool_type::deallocate_stateful(ptr, size, alignment);
 		}
+
 	}
 
 	virtual bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
 		return false;
+	}
+
+	void FlushDeallocations() {
+		std::thread::id thread_id = std::this_thread::get_id();
+		auto multi_pool = std::find(m_MultiPools.begin(), m_MultiPools.end(), thread_id);
+		if (multi_pool != m_MultiPools.end()) {
+			return (*multi_pool).multipool.FlushDeallocations();
+		}
 	}
 
 	void release() {
