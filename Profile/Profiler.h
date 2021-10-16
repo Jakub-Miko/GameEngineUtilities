@@ -12,8 +12,8 @@
 class Profiler {
 private:
 	struct Session {
-		const char* name;
-		const char* filepath;
+		const char* name = nullptr;
+		const char* filepath = nullptr;
 		std::ofstream output_stream;
 		bool first = true;
 	};

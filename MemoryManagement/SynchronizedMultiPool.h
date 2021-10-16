@@ -77,7 +77,7 @@ public:
 	//TODO: Add DirectDeallocation
 	virtual void do_deallocate(void* ptr, size_t size, size_t alignment) override {
 		if constexpr (owning_thread_direct_deallocate) {
-			MultiPool_type::deallocate_stateful(ptr, size, alignment); // Rework !!!!!!!!!!!!!!!!!
+			Pool_type::deallocate_stateful(ptr, size, alignment); // Rework !!!!!!!!!!!!!!!!!
 		}
 		else {
 			MultiPool_type::deallocate_stateful(ptr, size, alignment);

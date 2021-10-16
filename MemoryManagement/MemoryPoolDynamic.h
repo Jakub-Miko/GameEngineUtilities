@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <cassert>
+#include "MemoryManagementUtilities.h"
 
 template<typename Allocator = std::allocator<void>, bool stateful = false, bool deffered_deallocation = false>
 class MemoryPool {
@@ -51,7 +52,7 @@ public:
 
 	template<bool deffered>
 	struct Chunk_impl {
-		Chunk_impl() {}
+		Chunk_impl() : base(nullptr), capacity(0), block_size(0), available(0), next_available(0),freelist_head(nullptr) {}
 		block_alloc_unit* base;
 		size_t capacity;
 		size_t block_size;
@@ -63,7 +64,7 @@ public:
 	template<>
 	struct Chunk_impl<true> {
 		
-		Chunk_impl() {}
+		Chunk_impl() : base(nullptr), capacity(0), block_size(0), available(0), next_available(0), freelist_head(nullptr), dealloc_list() {}
 		block_alloc_unit* base;
 		size_t capacity;
 		size_t block_size;
@@ -182,6 +183,14 @@ public:
 	static Chunk* GetChunkState(void* ptr, size_t size) {
 		Chunk* ptr2 = *(reinterpret_cast<Chunk**>(static_cast<char*>(ptr) + size) - 1);
 		return ptr2;
+	}
+
+	static void deallocate_stateful(void* ptr, size_t size, size_t aligment) {
+		size_t req = get_pool_block_size(size, aligment, stateful);
+		auto chunk_st = GetChunkState(ptr, req);
+		if (!deallocate_form_chunk(ptr, chunk_st)) {
+			assert(false); //Invalid Chunk State
+		}
 	}
 
 	void deallocate(void* ptr){

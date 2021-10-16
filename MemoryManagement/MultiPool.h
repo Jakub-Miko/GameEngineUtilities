@@ -3,6 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include "MemoryPoolDynamic.h"
+#include "MemoryManagementUtilities.h"
 
 template<typename Allocator = std::allocator<void>,bool stateful = false, bool deffered_deallocation = false>
 class MultiPool : public std::pmr::memory_resource {
@@ -44,7 +45,7 @@ public:
 
 
 	MultiPool(const MultiPool& ref) = delete;
-	MultiPool(MultiPool&& ref)
+	MultiPool(MultiPool&& ref) noexcept
 		: upstream_alloc(std::move(ref.upstream_alloc)),
 		default_pool_chunk_size(ref.default_pool_chunk_size),
 		m_Pools(std::move(ref.m_Pools))
@@ -70,7 +71,7 @@ public:
 			return pool->allocate();
 		}
 		else {
-			size_t size_req = get_Required_size(size, alignment);
+			size_t size_req = get_pool_block_size(size, alignment, stateful);
 			m_Pools.emplace_back(size_req, default_pool_chunk_size, upstream_alloc);
 			pool = m_Pools.back().pool;
 			return pool->allocate();
@@ -80,7 +81,7 @@ public:
 
 	virtual void do_deallocate(void* ptr, size_t size, size_t alignment) override {
 		if constexpr (stateful) {
-			deallocate_stateful(ptr, size, alignment);
+			Pool_type::deallocate_stateful(ptr, size, alignment);
 		}
 		else {
 			Pool_type* pool = GetPool(size, alignment);
@@ -96,17 +97,8 @@ public:
 		return false;
 	}
 
-	static void deallocate_stateful(void* ptr, size_t size, size_t aligment) {
-		size_t req = get_Required_size(size, aligment);
-		auto chunk_st = Pool_type::GetChunkState(ptr, req);
-		if (!Pool_type::deallocate_form_chunk(ptr, chunk_st)) {
-			assert(false); //Invalid Chunk State
-		}
-	}
-
-
 	Pool_type* GetPool(size_t size, size_t alignment) {
-		size_t required_size = get_Required_size(size, alignment);
+		size_t required_size = get_pool_block_size(size, alignment,stateful);
 
 		auto pool = std::find(m_Pools.begin(), m_Pools.end(), required_size);
 		if (pool != m_Pools.end()) {
@@ -116,29 +108,6 @@ public:
 		return nullptr;
 	}
 
-
-	static size_t get_Required_size(size_t size, size_t alignment) {
-		size_t num;
-		if constexpr (stateful) {
-			num = std::max(size + sizeof(void*), alignment);
-		}
-		else {
-			num = std::max(size, alignment);
-		}
-		
-		num--;
-
-		num|= num >> 1;
-		num|= num>> 2;
-		num|= num>> 4;
-		num|= num>> 8;
-		num|= num>> 16;
-		num|= num>> 32;
-
-		num++;
-
-		return num;
-	}
 
 	//Should only be called in singlethread system, or from thread owning the pool!!!
 	void FlushDeallocations() {
