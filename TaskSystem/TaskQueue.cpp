@@ -16,7 +16,9 @@ void TaskQueue::Push(std::shared_ptr<TaskDefinition> def)
 std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 {
 	std::unique_lock<std::mutex> lock(m_QueueMutex);
-	on_push.wait(lock, [this]() {return !m_Queue.empty(); });
+	if (m_Queue.empty()) {
+		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
+	}
 	if (m_Queue.empty())
 		return nullptr;
 

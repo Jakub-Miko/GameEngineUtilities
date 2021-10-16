@@ -13,27 +13,28 @@ public:
 	struct MultiPoolThreadBinding {
 		std::thread::id thread_id;
 		MultiPool_type multipool;
-		
+
 
 		MultiPoolThreadBinding(std::thread::id thread_id, MultiPool_type multipool)
 			: thread_id(thread_id), multipool(multipool) {}
 
 		MultiPoolThreadBinding(std::thread::id thread_id,
-			const Allocator& alloc, 
+			const Allocator& alloc,
 			size_t default_pool_chunk_size)
-			: thread_id(thread_id), multipool(alloc,default_pool_chunk_size) {}
+			: thread_id(thread_id), multipool(alloc, default_pool_chunk_size) {}
 
 		bool operator==(std::thread::id ref) {
 			return thread_id == ref;
 		}
-	};
+
+ 	};
 
 	using MultiPoolAllocator = typename std::allocator_traits<Allocator>::template rebind_alloc<MultiPoolThreadBinding>;
 	
 	SynchronizedMultiPool(const Allocator& alloc = std::allocator<void>(), size_t default_pool_chunk_size = 256) 
-		: default_pool_chunk_size(default_pool_chunk_size), alloc(alloc), sync_mutex()
+		: default_pool_chunk_size(default_pool_chunk_size), alloc(alloc), sync_mutex(), m_MultiPools(alloc)
 	{
-
+		m_MultiPools.reserve(10000);
 	}
 
 
@@ -59,18 +60,19 @@ public:
 		release();
 	}
 
+	void InitializePools(std::thread::id thread) {
+		std::lock_guard<std::mutex> lock(sync_mutex);
+		m_MultiPools.emplace_back(thread, alloc, default_pool_chunk_size);
+	}
+
+	//TODO: Preinitialize the pool on construction to avoid locking at allocation.
 	virtual void* do_allocate(size_t size, size_t alignment) override {
 		std::thread::id thread_id = std::this_thread::get_id();
 		auto multi_pool = std::find(m_MultiPools.begin(), m_MultiPools.end(), thread_id);
 		if(multi_pool != m_MultiPools.end()) {
 			return (*multi_pool).multipool.allocate(size, alignment);
 		}
-		else {
-			std::unique_lock<std::mutex> lock(sync_mutex);
-			m_MultiPools.emplace_back(thread_id, alloc, default_pool_chunk_size);
-			lock.unlock();
-			return do_allocate(size, alignment);
-		}
+		assert(false); //Thread for pool isn't registered
 	}
 
 	//Build deallocation list
@@ -89,6 +91,7 @@ public:
 		return false;
 	}
 
+	//TODO: Remove lock when preinitialization is supported
 	void FlushDeallocations() {
 		std::thread::id thread_id = std::this_thread::get_id();
 		auto multi_pool = std::find(m_MultiPools.begin(), m_MultiPools.end(), thread_id);

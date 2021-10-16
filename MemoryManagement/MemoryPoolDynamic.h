@@ -231,10 +231,12 @@ public:
 		if constexpr (deffered_deallocation) {
 			for (auto chunk : m_Chunks) {
 				deallocation_list& dealloc_list = chunk->dealloc_list;
-				dealloc_list.tail->next = chunk->freelist_head;
-				chunk->freelist_head = dealloc_list.head;
-				chunk->available += dealloc_list.num_of_deallocs;
-				dealloc_list.clear();
+				if (dealloc_list.head) {
+					dealloc_list.tail->next = chunk->freelist_head;
+					chunk->freelist_head = dealloc_list.head;
+					chunk->available += dealloc_list.num_of_deallocs;
+					dealloc_list.clear();
+				}
 			}
 		}
 		else {

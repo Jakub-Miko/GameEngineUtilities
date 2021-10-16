@@ -6,14 +6,35 @@
 #include <thread>
 #include <chrono>
 #include <random>
-
+#include <array>
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
 
-void TaskTest(int milisecs) {
+void SecondTask() {
 	PROFILE("asdasd");
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
+
+void TaskTest(int milisecs) {
+	PROFILE("submission task");
+	TaskSystem* system = TaskSystem::Get();
+	int y = 8;
+	int step = 3;
+	int modulo = 50;
+	int bias = 10;
+	int num = 0;
+	int time;
+	std::vector<std::shared_ptr<TaskDefinition>> m_funcs;
+	m_funcs.reserve(200);
+
+	for (int i = 0; i < 100; i++) {
+		time = ((num++ * step) % modulo) + bias;
+		m_funcs.push_back(system->CreateTask([]() {SecondTask(); }));
+	}
+	system->Submit(m_funcs);
+}
+
 
 void Sync() {
 	std::cout << "Done\n";
@@ -26,16 +47,10 @@ int main() {
 
 		BEGIN_PROFILING("asdasd", "C:/Users/mainm/Desktop/GameEngine/Utility/TaskSystem/Profile_Result.json");
 		{
-			PROFILE("main");
-			int a = 5;
-
-			std::atomic<int>* counter = new std::atomic<int>(0);
-
 			PROFILE("TaskSystem Start");
-			TaskSystem::Initialize();
+			TaskSystem::Initialize(TaskSystemProps{ 11 });
 
 			TaskSystem* system = TaskSystem::Get();
-			system->Initialize(TaskSystemProps{ 1 });
 			system->Run();
 			std::vector<std::shared_ptr<TaskDefinition>> m_funcs;
 			m_funcs.reserve(1200);
@@ -47,12 +62,9 @@ int main() {
 			int num = 0;
 			{
 				int time;
-				PROFILE("TaskcCreation");
+				PROFILE("TaskCreation");
 				for (int y = 0; y < 100; y++) {
-					for (int i = 0; i < 10; i++) {
-						time = ((num++ * step) % modulo) + bias;
-						m_funcs.push_back(system->CreateTask([time]() {TaskTest(time); }));
-					}
+					m_funcs.push_back(system->CreateTask([time]() {TaskTest(time); }));
 					m_funcs.push_back(system->CreateTask(Sync));
 				}
 			}
@@ -74,7 +86,6 @@ int main() {
 			PROFILE("TaskSystem Submitted");
 
 			std::cin.get();
-			delete counter;
 			std::cout << "End\n";
 		}
 		TaskSystem::Shutdown();

@@ -28,7 +28,7 @@ public:
 
 	static void Shutdown();
 
-	static void ThreadLoop(TaskQueue* queue, std::atomic<bool>* run, const std::pmr::memory_resource* pool);
+	static void ThreadLoop(TaskQueue* queue, std::atomic<bool>* run, SynchronizedMultiPool<std::allocator<void>, true>* pool);
 
 	void DeleteTask(TaskDefinition* task, size_t size, size_t align = alignof(max_align_t));
 
@@ -48,6 +48,9 @@ public:
 		Submit(CreateTask(task, args...));
 	}
 
+	const TaskSystemProps& GetProps() const {
+		return m_Props;
+	}
 
 	template<typename T, typename ... Args>
 	std::shared_ptr<TaskDefinition> CreateTask(T task, Args ... args)

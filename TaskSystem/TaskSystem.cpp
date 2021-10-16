@@ -6,6 +6,12 @@
 
 TaskSystem* TaskSystem::instance = nullptr;	
 
+std::mutex startup_mutex;
+std::condition_variable startup_cond;
+int startup_thread_finished = 0;
+
+
+
 TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 	m_Queue.reset(new TaskQueue);
 	m_Pool = new SynchronizedMultiPool<std::allocator<void>,true>(std::allocator<void>(), 32768);
@@ -20,6 +26,7 @@ TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 void TaskSystem::Run()
 {
 	PROFILE("ThreadLaunch");
+	m_Pool->InitializePools(std::this_thread::get_id());
 	for (auto& thread : m_Threads) {
 		thread = new std::thread(ThreadLoop,m_Queue.get(),&m_runnning,m_Pool);
 	}
@@ -31,7 +38,7 @@ void TaskSystem::Flush()
 		Submit(CreateTask([]() {}));
 	}
 	m_Queue->Flush();
-
+	m_Pool->FlushDeallocations();
 }
 
 TaskSystem::~TaskSystem()
@@ -43,11 +50,21 @@ TaskSystem::~TaskSystem()
 		delete thread;
 	}
 	m_Queue->Clear();
+	startup_thread_finished = 0;
 	delete m_Pool;
 }
 
+static void ThreadStartup(SynchronizedMultiPool<std::allocator<void>, true>* pool) {
+	PROFILE("ThreadStartup");
+	pool->InitializePools(std::this_thread::get_id());
+	std::unique_lock<std::mutex> lock(startup_mutex);
+	startup_thread_finished++;
+	startup_cond.notify_all();
+	startup_cond.wait(lock, []() {return startup_thread_finished >= TaskSystem::Get()->GetProps().num_of_threads; });
+}
 
-void TaskSystem::ThreadLoop(TaskQueue* queue, std::atomic<bool>* run,const std::pmr::memory_resource* pool) {
+void TaskSystem::ThreadLoop(TaskQueue* queue, std::atomic<bool>* run,SynchronizedMultiPool<std::allocator<void>, true>* pool) {
+	ThreadStartup(pool);
 	bool running = true;
 	while (running && run->load()) {
 		PROFILE("Load");
@@ -55,6 +72,7 @@ void TaskSystem::ThreadLoop(TaskQueue* queue, std::atomic<bool>* run,const std::
 		if (task) {
 			task->Run();
 		}
+		pool->FlushDeallocations();
 	}
 }
 
