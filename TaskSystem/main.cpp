@@ -52,6 +52,13 @@ int main() {
 
 			TaskSystem* system = TaskSystem::Get();
 			system->Run();
+
+			auto task_return = system->CreateTask<int>([](int a) { PROFILE("RETURN"); return 2 * a; }, 5);
+			system->Submit(task_return);
+			auto return_value = task_return->GetFuture().get();
+			std::cout << return_value << "\n";
+
+
 			std::vector<std::shared_ptr<TaskDefinition>> m_funcs;
 			m_funcs.reserve(1200);
 			PROFILE("TaskSystem Running");

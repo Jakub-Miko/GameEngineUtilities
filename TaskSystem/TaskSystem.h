@@ -32,6 +32,11 @@ public:
 
 	void DeleteTask(TaskDefinition* task, size_t size, size_t align = alignof(max_align_t));
 
+	template<typename R, typename T, typename ... Args>
+	void Submit(std::shared_ptr<Task<R, T, Args...>> task) {
+		m_Queue->Push(task);
+	}
+
 	void Submit(std::shared_ptr<TaskDefinition> task) {
 		m_Queue->Push(task);
 	}
@@ -52,12 +57,12 @@ public:
 		return m_Props;
 	}
 
-	template<typename T, typename ... Args>
-	std::shared_ptr<TaskDefinition> CreateTask(T task, Args ... args)
+	template<typename R = void,typename T, typename ... Args>
+	std::shared_ptr<Task<R, T, Args...>> CreateTask(T task, Args ... args)
 	{
-		std::pmr::polymorphic_allocator<Task<T,Args...>> alloc(m_Pool);
-		return std::shared_ptr<TaskDefinition>(MakeTask(task, std::tuple<Args...>(args...), alloc), [](TaskDefinition* ptr) {
-			TaskSystem::Get()->DeleteTask(ptr,sizeof(Task<T, Args...>),alignof(Task<T, Args...>));
+		std::pmr::polymorphic_allocator<Task<R,T,Args...>> alloc(m_Pool);
+		return std::shared_ptr<Task<R, T, Args...>>(MakeTask<R>(task, std::tuple<Args...>(args...), alloc), [](TaskDefinition* ptr) {
+			TaskSystem::Get()->DeleteTask(ptr,sizeof(Task<R,T, Args...>),alignof(Task<R,T, Args...>));
 		});
 	}
 
