@@ -5,6 +5,32 @@
 #include <cassert>
 #include "MemoryManagementUtilities.h"
 
+template<bool deffered,typename Pool>
+struct Chunk_impl {
+	Chunk_impl() : base(nullptr), capacity(0), block_size(0), available(0), next_available(0), freelist_head(nullptr) {}
+	typename Pool::block_alloc_unit* base;
+	size_t capacity;
+	size_t block_size;
+	size_t available;
+	size_t next_available;
+	typename Pool::free_block* freelist_head;
+};
+
+template<typename Pool>
+struct Chunk_impl<true,Pool> {
+
+	Chunk_impl() : base(nullptr), capacity(0), block_size(0), available(0), next_available(0), freelist_head(nullptr), dealloc_list() {}
+	typename Pool::block_alloc_unit* base;
+	size_t capacity;
+	size_t block_size;
+	size_t available;
+	size_t next_available;
+	typename Pool::free_block* freelist_head;
+	typename Pool::deallocation_list dealloc_list;
+};
+
+
+
 template<typename Allocator = std::allocator<void>, bool stateful = false, bool deffered_deallocation = false>
 class MemoryPool {
 
@@ -14,7 +40,6 @@ class MemoryPool {
 		free_block(free_block* ptr) : next(ptr) {}
 		free_block* next;
 	};
-
 	using block_alloc_unit = unsigned char;
 
 public:
@@ -22,7 +47,7 @@ public:
 	struct deallocation_list {
 		deallocation_list() : m_lock() {}
 		deallocation_list(const deallocation_list& ref) : m_lock(), head(ref.head), tail(ref.tail) {}
-		deallocation_list(deallocation_list&& ref) : head(ref.head), tail(ref.tail), m_lock(std::move(lock)) {}
+		deallocation_list(deallocation_list&& ref) : head(ref.head), tail(ref.tail), m_lock(std::move(ref.lock)) {}
 		deallocation_list& operator=(const deallocation_list& ref) = delete;
 		deallocation_list& operator=(deallocation_list&& ref) = delete;
 
@@ -50,31 +75,8 @@ public:
 		std::mutex m_lock;
 	};
 
-	template<bool deffered>
-	struct Chunk_impl {
-		Chunk_impl() : base(nullptr), capacity(0), block_size(0), available(0), next_available(0),freelist_head(nullptr) {}
-		block_alloc_unit* base;
-		size_t capacity;
-		size_t block_size;
-		size_t available;
-		size_t next_available;
-		free_block* freelist_head;
-	};
-
-	template<>
-	struct Chunk_impl<true> {
-		
-		Chunk_impl() : base(nullptr), capacity(0), block_size(0), available(0), next_available(0), freelist_head(nullptr), dealloc_list() {}
-		block_alloc_unit* base;
-		size_t capacity;
-		size_t block_size;
-		size_t available;
-		size_t next_available;
-		free_block* freelist_head;
-		deallocation_list dealloc_list;
-	};
-
-	using Chunk = typename Chunk_impl<deffered_deallocation>;
+	friend Chunk_impl<deffered_deallocation, MemoryPool<Allocator, stateful, deffered_deallocation>>;
+	using Chunk = typename Chunk_impl<deffered_deallocation, MemoryPool<Allocator,stateful, deffered_deallocation>>;
 
 private:
 

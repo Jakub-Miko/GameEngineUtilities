@@ -48,7 +48,7 @@ int main() {
 		BEGIN_PROFILING("asdasd", "C:/Users/mainm/Desktop/GameEngine/Utility/TaskSystem/Profile_Result.json");
 		{
 			PROFILE("TaskSystem Start");
-			TaskSystem::Initialize(TaskSystemProps{ 11 });
+			TaskSystem::Initialize(TaskSystemProps{ 0 });
 
 			TaskSystem* system = TaskSystem::Get();
 			system->Run();
@@ -60,7 +60,7 @@ int main() {
 
 
 			std::vector<std::shared_ptr<TaskDefinition>> m_funcs;
-			m_funcs.reserve(1200);
+			m_funcs.reserve(1200); 
 			PROFILE("TaskSystem Running");
 			int y = 8;
 			int step = 3;

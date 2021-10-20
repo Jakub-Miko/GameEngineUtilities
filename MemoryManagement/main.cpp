@@ -17,6 +17,7 @@ int main() {
 		
 		{
 			SynchronizedMultiPool<std::allocator<void>> mem(std::allocator<void>(),8192);
+			mem.InitializePools(std::this_thread::get_id());
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
@@ -41,6 +42,7 @@ int main() {
 		}
 		{
 			SynchronizedMultiPool<std::allocator<void>> mem(std::allocator<void>(), 8192);
+			mem.InitializePools(std::this_thread::get_id());
 			std::vector<data_type*> m_ptrs;
 			m_ptrs.reserve(1024);
 			PROFILE("Main");
