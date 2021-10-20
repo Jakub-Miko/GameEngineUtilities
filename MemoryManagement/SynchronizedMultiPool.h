@@ -7,7 +7,7 @@ template<typename Allocator = std::allocator<void>, bool owning_thread_direct_de
 class SynchronizedMultiPool : public std::pmr::memory_resource {
 public:
 	
-	using MultiPool_type = typename MultiPool<Allocator, true, true>;
+	using MultiPool_type = MultiPool<Allocator, true, true>;
 	using Pool_type = typename MultiPool_type::Pool_type;
 
 	struct MultiPoolThreadBinding {

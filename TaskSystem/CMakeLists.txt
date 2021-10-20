@@ -8,4 +8,4 @@ add_executable(TaskSystem main.cpp "Task.h" "TaskSystem.h" "TaskSystem.cpp" "Tas
 
 find_package(Threads)
 target_include_directories(TaskSystem PRIVATE . "../Profile/" "../MemoryManagement/")
-target_link_libraries(TaskSystem PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(TaskSystem PUBLIC ${CMAKE_THREAD_LIBS_INIT})

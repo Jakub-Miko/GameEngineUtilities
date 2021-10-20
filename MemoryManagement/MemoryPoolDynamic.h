@@ -76,7 +76,7 @@ public:
 	};
 
 	friend Chunk_impl<deffered_deallocation, MemoryPool<Allocator, stateful, deffered_deallocation>>;
-	using Chunk = typename Chunk_impl<deffered_deallocation, MemoryPool<Allocator,stateful, deffered_deallocation>>;
+	using Chunk = Chunk_impl<deffered_deallocation, MemoryPool<Allocator,stateful, deffered_deallocation>>;
 
 private:
 

@@ -8,7 +8,9 @@ add_subdirectory("dependencies")
 
 target_compile_definitions(LuaTest PRIVATE DISABLE_ASSERTS)
 
-target_link_libraries(LuaTest PRIVATE lua)
+find_package(Threads)
+
+target_link_libraries(LuaTest PRIVATE lua ${CMAKE_THREAD_LIBS_INIT})
 
 target_include_directories(LuaTest PRIVATE "." "../")
 
