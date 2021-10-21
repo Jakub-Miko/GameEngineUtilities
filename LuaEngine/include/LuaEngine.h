@@ -2,7 +2,7 @@
 #include <tuple>
 #include <memory>
 #include <vector>
-#include <RuntimeTypeIdentifier/TypeId.h>
+#include <TypeId.h>
 #include <stdexcept>
 
 // Debug code for assertions 

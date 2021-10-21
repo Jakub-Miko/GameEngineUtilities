@@ -1,0 +1,5 @@
+add_subdirectory(RuntimeTypeIdentifier)
+add_subdirectory(Profile)
+add_subdirectory(MemoryManagement)
+add_subdirectory(LuaEngine)
+add_subdirectory(TaskSystem)

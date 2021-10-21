@@ -25,7 +25,6 @@ TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 
 void TaskSystem::Run()
 {
-	PROFILE("ThreadLaunch");
 	m_Pool->InitializePools(std::this_thread::get_id());
 	for (auto& thread : m_Threads) {
 		thread = new std::thread(ThreadLoop,m_Queue.get(),&m_runnning,m_Pool);

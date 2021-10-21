@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.10.0)
 
 
-project(Test)
+project(Profiler)
 
+add_library(${PROJECT_NAME} INTERFACE)
 
-add_executable(${PROJECT_NAME} "Test_1.cpp" Profiler.h )
-
-target_include_directories(${PROJECT_NAME} PRIVATE .)
+target_include_directories(${PROJECT_NAME} INTERFACE "./include/")
 
