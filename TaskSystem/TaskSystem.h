@@ -66,6 +66,8 @@ public:
 		});
 	}
 
+	void FlushDeallocations();
+
 	void Run();
 
 	void Flush();

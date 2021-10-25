@@ -59,6 +59,7 @@ public:
 		m_Pools = std::move(ref.m_Pools);
 		upstream_alloc = std::move(ref.upstream_alloc);
 		default_pool_chunk_size = default_pool_chunk_size;
+		return *this;
 	}
 
 	~MultiPool() {
