@@ -250,7 +250,7 @@ public:
 		for (auto chunk : m_Chunks) {
 			chunk->freelist_head = nullptr;
 			chunk->next_available = 0;
-			chunk->available = chunk.capacity;
+			chunk->available = chunk->capacity;
 			if constexpr (deffered_deallocation) {
 				chunk.dealloc_list.clear();
 			}
