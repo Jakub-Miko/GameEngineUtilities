@@ -35,6 +35,7 @@ public:
 		: default_pool_chunk_size(default_pool_chunk_size), alloc(alloc), sync_mutex(), m_MultiPools(alloc)
 	{
 		m_MultiPools.reserve(10000);
+		InitializePools(std::this_thread::get_id());
 	}
 
 

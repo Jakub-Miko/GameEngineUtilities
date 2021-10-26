@@ -23,9 +23,14 @@ TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 	m_Threads = std::vector<std::thread*>(m_Props.num_of_threads);
 }
 
+void TaskSystem::FlushDeallocations()
+{
+	m_Pool->FlushDeallocations();
+}
+
+
 void TaskSystem::Run()
 {
-	m_Pool->InitializePools(std::this_thread::get_id());
 	for (auto& thread : m_Threads) {
 		thread = new std::thread(ThreadLoop,m_Queue.get(),&m_runnning,m_Pool);
 	}
@@ -77,6 +82,7 @@ void TaskSystem::ThreadLoop(TaskQueue* queue, std::atomic<bool>* run,Synchronize
 
 void TaskSystem::DeleteTask(TaskDefinition* task,size_t size, size_t align)
 {
+	task->~TaskDefinition();
 	m_Pool->deallocate(task,size,align);
 }
 

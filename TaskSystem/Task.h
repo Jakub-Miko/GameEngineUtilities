@@ -7,21 +7,22 @@
 class TaskDefinition {
 public:
 	virtual void Run() = 0;
+	virtual ~TaskDefinition() {}
 };
 
 
 
 template<typename R, typename T, typename ... Args>
-class Task : public TaskDefinition{
+class Task : public TaskDefinition {
 public:
-	Task(T function, std::tuple<Args...> args) : function(function),data(args) {
+	Task(T function, std::tuple<Args...> args) : function(function), data(args) {
 
 	}
 
-	Task(const Task<R,T,Args...>& ref) :function(ref.function), data(ref.data) {}
+	Task(const Task<R, T, Args...>& ref) :function(ref.function), data(ref.data) {}
 
 	virtual void Run() override {
-		promise.set_value(std::apply(function,data));
+		promise.set_value(std::apply(function, data));
 	}
 
 	std::shared_future<R> GetFuture() {
