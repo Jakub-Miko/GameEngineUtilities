@@ -6,3 +6,6 @@
 /MemoryManagement/Profile_Result.json
 /.vs
 /out/build/x64-Debug
+/ThreadManager/.vs
+/ThreadManager/out/build
+/ThreadManager/CMakeSettings.json
