@@ -2,6 +2,7 @@
 #include <memory_resource>
 #include <memory>
 #include <type_traits>
+#include <algorithm>
 #include "MemoryPoolDynamic.h"
 #include "MemoryManagementUtilities.h"
 
