@@ -3,6 +3,7 @@
 #include <tuple>
 #include <functional>
 #include <future>
+#include <Promise.h>
 #include <Profiler.h>
 class TaskDefinition {
 public:
@@ -22,17 +23,17 @@ public:
 	Task(const Task<R, T, Args...>& ref) :function(ref.function), data(ref.data) {}
 
 	virtual void Run() override {
-		promise.set_value(std::apply(function, data));
+		promise.SetValue(std::apply(function, data));
 	}
 
 	std::shared_future<R> GetFuture() {
-		return promise.get_future().share();
+		return promise.GetFuture();
 	}
 
 private:
 	T function;
 	std::tuple<Args...> data;
-	std::promise<R> promise;
+	Promise<R> promise;
 };
 
 template<typename R, typename T>
@@ -46,16 +47,16 @@ public:
 
 
 	virtual void Run() override {
-		promise.set_value(std::invoke(function));
+		promise.SetValue(std::invoke(function));
 	}
 
 	std::shared_future<R> GetFuture() {
-		return promise.get_future().share();
+		return promise.GetFuture();
 	}
 
 private:
 	T function;
-	std::promise<R> promise;
+	Promise<R> promise;
 };
 
 template<typename T, typename ... Args>
