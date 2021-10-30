@@ -47,7 +47,7 @@ public:
 	}
 
 private:
-	Future(std::shared_future<T>& future) : m_future(future) {}
+	Future(const std::shared_future<T>& future) : m_future(future) {}
 
 	std::shared_future<T> m_future;
 
