@@ -39,7 +39,7 @@ std::string FileManager::GetAssetFilePath(const std::string& path)
 
 std::string FileManager::GetRootPath()
 {
-	return std::filesystem::current_path().string();
+	return std::filesystem::current_path().parent_path().generic_string();
 }
 
 FileManager::FileManager()

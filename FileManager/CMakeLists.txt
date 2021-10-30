@@ -6,4 +6,4 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/out")
 
 add_library(FileManager "FileManager.h" "FileManager.cpp")
 
-target_include_directories(FileManager PRIVATE .)
+target_include_directories(FileManager PUBLIC .)
