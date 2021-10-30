@@ -9,3 +9,5 @@
 /ThreadManager/.vs
 /ThreadManager/out/build
 /ThreadManager/CMakeSettings.json
+/FileManager/.vs
+/FileManager/out
