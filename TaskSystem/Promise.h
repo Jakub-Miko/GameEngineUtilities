@@ -81,7 +81,7 @@ public:
 	}
 
 	Future<T> GetFuture() {
-		return Future<T>(m_promise.get_future());
+		return Future<T>(m_promise.get_future().share());
 	}
 
 	void SetValue(T&& value) {
