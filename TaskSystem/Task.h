@@ -26,7 +26,7 @@ public:
 		promise.SetValue(std::apply(function, data));
 	}
 
-	std::shared_future<R> GetFuture() {
+	Future<R> GetFuture() {
 		return promise.GetFuture();
 	}
 
@@ -50,7 +50,7 @@ public:
 		promise.SetValue(std::invoke(function));
 	}
 
-	std::shared_future<R> GetFuture() {
+	Future<R> GetFuture() {
 		return promise.GetFuture();
 	}
 
