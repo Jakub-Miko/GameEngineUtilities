@@ -19,8 +19,6 @@ std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 	if (m_Queue.empty()) {
 		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
 	}
-	if (m_Queue.empty())
-		return nullptr;
 
 	std::shared_ptr<TaskDefinition> task = m_Queue.front();
 	m_Queue.pop();

@@ -12,7 +12,7 @@ int startup_thread_finished = 0;
 
 
 
-TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
+TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props), counter(0) {
 	m_Queue.reset(new TaskQueue);
 	m_Pool = new SynchronizedMultiPool<std::allocator<void>,true>(std::allocator<void>(), 32768);
 
@@ -36,7 +36,41 @@ void TaskSystem::Run()
 	}
 }
 
+
+//Carefull flush happens only for task submitted before flush, if worker running workerthreads submit work after flush, a significant slowdown can occur, 
+//this can be avoided by submitting task from a single thread.
+//FLUSH CAN ONLY BE CALLED BY MAINTHREAD, OTHWERWISE IT'S UNDEFINED BEHAVIOR
 void TaskSystem::Flush()
+{
+	std::lock_guard<std::mutex> lock_global(global_flush_mutex);
+	counter = m_Threads.size();
+	auto task = [this]() {
+		std::unique_lock<std::mutex> lock(flush_mut);
+		counter--;
+		if (counter <= 0) {
+			PROFILE("FinishedWait");
+
+			flush_cond.notify_all();
+			return;
+		}
+		else {
+			PROFILE("WorkerWait");
+			flush_cond.wait(lock, [this]() { return counter <= 0; });
+			return;
+		}
+	};
+
+	for (int i = 0; i < m_Threads.size(); i++) {
+		Submit(CreateTask(task));
+	}
+
+	std::unique_lock<std::mutex> lock(flush_mut);
+	PROFILE("MainWait");
+	flush_cond.wait(lock, [this]() { return counter <= 0; });
+
+}
+
+void TaskSystem::FlushLoop()
 {
 	for (auto& thread : m_Threads) {
 		Submit(CreateTask([]() {}));
@@ -48,7 +82,7 @@ void TaskSystem::Flush()
 TaskSystem::~TaskSystem()
 {
 	m_runnning = false;
-	Flush();
+	FlushLoop();
 	for (auto thread : m_Threads) {
 		thread->join();
 		delete thread;

@@ -70,7 +70,12 @@ public:
 
 	void Run();
 
+	//Carefull flush happens only for task submitted before flush, if worker running workerthreads submit work after flush, a significant slowdown can occur, 
+	//this can be avoided by submitting task from a single thread.
+	//FLUSH CAN ONLY BE CALLED BY MAINTHREAD, OTHWERWISE IT'S UNDEFINED BEHAVIOR
 	void Flush();
+
+	void FlushLoop();
 
 	~TaskSystem();
 
@@ -86,4 +91,10 @@ private:
 	std::vector<std::thread*> m_Threads;
 	SynchronizedMultiPool<std::allocator<void>,true>* m_Pool;
 	TaskSystemProps m_Props;
+
+	std::mutex global_flush_mutex;
+	std::mutex flush_mut;
+	int counter;
+	std::condition_variable flush_cond;
+
 };
