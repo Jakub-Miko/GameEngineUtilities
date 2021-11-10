@@ -1,6 +1,5 @@
 #include <iostream> 
 #include <TaskSystem.h>
-
 #include <Profiler.h>
 #include <tuple>
 #include <thread>
@@ -13,7 +12,7 @@
 
 void SecondTask() {
 	PROFILE("asdasd");
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	std::this_thread::sleep_for(std::chrono::milliseconds(2));
 }
 
 void TaskTest(int milisecs) {
@@ -55,7 +54,7 @@ int main() {
 
 			auto task_return = system->CreateTask<int>([](int a) { PROFILE("RETURN"); return 2 * a; }, 5);
 			system->Submit(task_return);
-			auto return_value = task_return->GetFuture().get();
+			auto return_value = task_return->GetFuture().GetValue();
 			std::cout << return_value << "\n";
 
 
@@ -79,6 +78,9 @@ int main() {
 				PROFILE("TaskSubmittion");
 				system->Submit(m_funcs);
 			}
+
+			system->Flush();
+			PROFILE("FLUSH");
 			auto Task = system->CreateTask([](int i, int y) { std::cout << y << ", " << i << "\n"; },5,6);
 
 			auto tasks = std::vector<std::shared_ptr<TaskDefinition>>{

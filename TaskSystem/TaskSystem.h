@@ -94,7 +94,7 @@ private:
 
 	std::mutex global_flush_mutex;
 	std::mutex flush_mut;
-	int counter;
+	bool signaled;
 	std::condition_variable flush_cond;
 
 };
