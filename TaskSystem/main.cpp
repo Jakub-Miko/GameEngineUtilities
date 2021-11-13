@@ -81,9 +81,13 @@ int main() {
 			}
 
 			TaskSystemFence fence;
-			auto task = [&fence, &system]() {fence.Signal(1); system->FlushLoop(); };
+			auto task = [&fence, &system]() {
+				fence.Signal(1); system->FlushLoop(); 
+			};
 			system->SetIdleTask(system->CreateTask(task));
-			system->JoinTaskSystem([&fence]() -> bool { return fence.IsValue(1); });
+			system->JoinTaskSystem([&fence]() -> bool {
+				return fence.IsValue(1); 
+				});
 
 			
 			PROFILE("FLUSH");

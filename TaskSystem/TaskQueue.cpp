@@ -15,7 +15,7 @@ void TaskQueue::Push(std::shared_ptr<TaskDefinition> def)
 	lock.unlock();
 }
 
-std::shared_ptr<TaskDefinition> TaskQueue::Pop()
+std::shared_ptr<TaskDefinition> TaskQueue::Pop(uint32_t& sync_var, uint32_t& reference_sync_num)
 {
 	std::unique_lock<std::mutex> lock(m_QueueMutex);
 	if (m_Queue.empty()) {
@@ -26,8 +26,12 @@ std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 			on_push.notify_one();
 			m_IdleTask.reset();
 		}
-		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
+		on_push.wait(lock, [this, &sync_var, &reference_sync_num]() {return !m_Queue.empty() || sync_var != reference_sync_num; });
 		++runnnig_threads;
+		if (sync_var != reference_sync_num) {
+			sync_var = reference_sync_num;
+			return nullptr;
+		}
 		
 	}
 
@@ -57,8 +61,11 @@ void TaskQueue::SetIdleTask(std::shared_ptr<TaskDefinition> task)
 	m_IdleTask = task;
 }
 
-void TaskQueue::Flush()
+void TaskQueue::Flush(uint32_t& ref_var)
 {
+	std::unique_lock<std::mutex> lock(m_QueueMutex);
+	ref_var++;
+	lock.unlock();
 	on_push.notify_all();
 }
 

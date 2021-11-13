@@ -74,9 +74,11 @@ public:
 	auto JoinTaskSystem(F exit_condition_function) -> std::enable_if_t<std::is_same_v<std::invoke_result_t<F>,bool>,void>
 	{
 		JoinedThreadLoopInit();
+		uint32_t sync = GetSyncNum();
+		uint32_t& ref = GetSyncNum();
 		while(!exit_condition_function() && m_runnning.load())
 		{
-			JoinedThreadLoopIteration();
+			JoinedThreadLoopIteration(sync, ref);
 		}
 		JoinedThreadLoopShutdown();
 	}
@@ -96,10 +98,12 @@ public:
 
 private:
 	
+	uint32_t& GetSyncNum() { return reference_sync_var; };
+
 	static TaskSystem* instance;
 	TaskSystem(TaskSystemProps props);
 
-	void JoinedThreadLoopIteration();
+	void JoinedThreadLoopIteration(uint32_t& sync,uint32_t& ref);
 	void JoinedThreadLoopInit();
 	void JoinedThreadLoopShutdown();
 
@@ -108,6 +112,8 @@ private:
 	std::vector<std::thread*> m_Threads;
 	SynchronizedMultiPool<std::allocator<void>,true>* m_Pool;
 	TaskSystemProps m_Props;
+
+	uint32_t reference_sync_var = 0;
 
 	std::mutex global_flush_mutex;
 	std::mutex flush_mut;

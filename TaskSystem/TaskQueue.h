@@ -11,7 +11,7 @@ public:
 
 	void Push(std::shared_ptr<TaskDefinition> def);
 
-	std::shared_ptr<TaskDefinition> Pop();
+	std::shared_ptr<TaskDefinition> Pop(uint32_t& sync_var, uint32_t& reference_sync_var);
 
 	void RegisterThread();
 
@@ -19,7 +19,7 @@ public:
 
 	void SetIdleTask(std::shared_ptr<TaskDefinition> task);
 
-	void Flush();
+	void Flush(uint32_t& ref_var);
 
 	void Clear();
 

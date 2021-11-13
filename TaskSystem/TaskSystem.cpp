@@ -23,10 +23,10 @@ TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 	m_Threads = std::vector<std::thread*>(m_Props.num_of_threads);
 }
 
-void TaskSystem::JoinedThreadLoopIteration()
+void TaskSystem::JoinedThreadLoopIteration(uint32_t& sync,uint32_t& ref)
 {
 	PROFILE("Load");
-	std::shared_ptr<TaskDefinition> task = m_Queue->Pop();
+	std::shared_ptr<TaskDefinition> task = m_Queue->Pop(sync,ref);
 	if (task) {
 		task->Run();
 	}
@@ -71,8 +71,6 @@ void TaskSystem::Flush()
 	};
 
 	m_Queue->SetIdleTask(CreateTask(task));
-	Submit(CreateTask([]() {}));
-	m_Queue->Flush();
 	std::unique_lock<std::mutex> lock(flush_mut);
 	PROFILE("MainWait");
 	flush_cond.wait(lock, [this]() { return signaled; });
@@ -81,10 +79,7 @@ void TaskSystem::Flush()
 
 void TaskSystem::FlushLoop()
 {
-	for (auto& thread : m_Threads) {
-		Submit(CreateTask([]() {}));
-	}
-	m_Queue->Flush();
+	m_Queue->Flush(reference_sync_var);
 	m_Pool->FlushDeallocations();
 }
 
@@ -113,9 +108,11 @@ static void ThreadStartup(SynchronizedMultiPool<std::allocator<void>, true>* poo
 void TaskSystem::ThreadLoop(TaskQueue* queue, std::atomic<bool>* run,SynchronizedMultiPool<std::allocator<void>, true>* pool) {
 	ThreadStartup(pool);
 	bool running = true;
+	uint32_t& sync_ref = TaskSystem::Get()->GetSyncNum();
+	uint32_t sync_num = sync_ref;
 	while (running && run->load()) {
 		PROFILE("Load");
-		std::shared_ptr<TaskDefinition> task = queue->Pop();
+		std::shared_ptr<TaskDefinition> task = queue->Pop(sync_num, sync_ref);
 		if (task) {
 			task->Run();
 		}
@@ -132,6 +129,7 @@ void TaskSystem::DeleteTask(TaskDefinition* task,size_t size, size_t align)
 void TaskSystem::SetIdleTask(std::shared_ptr<TaskDefinition> task)
 {
 	m_Queue->SetIdleTask(task);
+	m_Queue->Flush(reference_sync_var);
 }
 
 
