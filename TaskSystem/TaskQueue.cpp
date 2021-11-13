@@ -22,9 +22,8 @@ std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 		--runnnig_threads;
 		if (runnnig_threads == 0 && m_IdleTask) {
 			PROFILE("IDLE");
-			lock.unlock();
-			m_IdleTask->Run();
-			lock.lock();
+			m_Queue.push(m_IdleTask);
+			on_push.notify_one();
 			m_IdleTask.reset();
 		}
 		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
@@ -60,7 +59,6 @@ void TaskQueue::SetIdleTask(std::shared_ptr<TaskDefinition> task)
 
 void TaskQueue::Flush()
 {
-
 	on_push.notify_all();
 }
 

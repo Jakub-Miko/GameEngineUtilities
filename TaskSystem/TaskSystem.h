@@ -95,7 +95,7 @@ public:
 
 
 private:
-
+	
 	static TaskSystem* instance;
 	TaskSystem(TaskSystemProps props);
 

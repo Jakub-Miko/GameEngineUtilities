@@ -18,7 +18,7 @@ public:
 	void UnRegisterThread();
 
 	void SetIdleTask(std::shared_ptr<TaskDefinition> task);
-	
+
 	void Flush();
 
 	void Clear();
