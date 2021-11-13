@@ -79,20 +79,11 @@ int main() {
 				PROFILE("TaskSubmittion");
 				system->Submit(m_funcs);
 			}
-			int counter = 0;
+
 			TaskSystemFence fence;
 			auto task = [&fence, &system]() {fence.Signal(1); system->FlushLoop(); };
 			system->SetIdleTask(system->CreateTask(task));
-			
-			system->JoinTaskSystem([&fence]() -> bool { 
-				if (fence.IsValue(1)) {
-					return true;
-				}
-				else {
-					return false;
-				}
-
-				});
+			system->JoinTaskSystem([&fence]() -> bool { return fence.IsValue(1); });
 
 			
 			PROFILE("FLUSH");
