@@ -73,10 +73,12 @@ public:
 	template<typename F>
 	auto JoinTaskSystem(F exit_condition_function) -> std::enable_if_t<std::is_same_v<std::invoke_result_t<F>,bool>,void>
 	{
+		JoinedThreadLoopInit();
 		while(!exit_condition_function() && m_runnning.load())
 		{
 			JoinedThreadLoopIteration();
 		}
+		JoinedThreadLoopShutdown();
 	}
 
 	void Run();
@@ -98,6 +100,8 @@ private:
 	TaskSystem(TaskSystemProps props);
 
 	void JoinedThreadLoopIteration();
+	void JoinedThreadLoopInit();
+	void JoinedThreadLoopShutdown();
 
 	std::atomic<bool> m_runnning = true;
 	std::unique_ptr<TaskQueue> m_Queue;

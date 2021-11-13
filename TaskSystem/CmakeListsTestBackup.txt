@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.10.0)
+
+project(TaskSystem)
+
+set(CMAKE_CXX_STANDARD 17)
+add_executable(TaskSystem "main.cpp" "Task.h" "TaskSystem.h" "TaskSystemFence.cpp" "TaskSystem.cpp" "TaskQueue.h" "TaskQueue.cpp"  "Promise.h" "Promise.cpp")
+target_compile_definitions(TaskSystem PRIVATE ENABLE_PROFILING)
+
+find_package(Threads)
+add_subdirectory("../Profile" "./build1")
+add_subdirectory("../MemoryManagement" "./build2")
+target_include_directories(TaskSystem PUBLIC .)
+target_link_libraries(TaskSystem PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(TaskSystem PUBLIC Profiler MemoryManagement)

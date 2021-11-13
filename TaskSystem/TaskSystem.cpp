@@ -26,11 +26,21 @@ TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 void TaskSystem::JoinedThreadLoopIteration()
 {
 	PROFILE("Load");
-	std::shared_ptr<TaskDefinition> task = m_Queue->PopExternal();
+	std::shared_ptr<TaskDefinition> task = m_Queue->Pop();
 	if (task) {
 		task->Run();
 	}
 	m_Pool->FlushDeallocations();
+}
+
+void TaskSystem::JoinedThreadLoopInit()
+{
+	m_Queue->RegisterThread();
+}
+
+void TaskSystem::JoinedThreadLoopShutdown()
+{
+	m_Queue->UnRegisterThread();
 }
 
 void TaskSystem::FlushDeallocations()

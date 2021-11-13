@@ -13,7 +13,9 @@ public:
 
 	std::shared_ptr<TaskDefinition> Pop();
 
-	std::shared_ptr<TaskDefinition> PopExternal();
+	void RegisterThread();
+
+	void UnRegisterThread();
 
 	void SetIdleTask(std::shared_ptr<TaskDefinition> task);
 	
@@ -26,7 +28,8 @@ private:
 	std::mutex m_QueueMutex;
 	std::condition_variable on_push;
 
+	int registered_threads = 0;
 	int runnnig_threads = 0;
 	std::shared_ptr<TaskDefinition> m_IdleTask;
 
-};
+};            

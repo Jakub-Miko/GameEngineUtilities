@@ -2,7 +2,7 @@
 #include <Profiler.h>
 
 TaskQueue::TaskQueue(int num_of_threads)
-	: m_Queue(), m_QueueMutex(), runnnig_threads(num_of_threads)
+	: m_Queue(), m_QueueMutex(), runnnig_threads(num_of_threads),registered_threads(num_of_threads)
 {
 	
 }
@@ -29,6 +29,7 @@ std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 		}
 		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
 		++runnnig_threads;
+		
 	}
 
 	std::shared_ptr<TaskDefinition> task = m_Queue.front();
@@ -36,17 +37,20 @@ std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 	return task;
 }
 
-std::shared_ptr<TaskDefinition> TaskQueue::PopExternal()
+void TaskQueue::RegisterThread()
 {
 	std::unique_lock<std::mutex> lock(m_QueueMutex);
-	if (m_Queue.empty()) {
-		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
-	}
-
-	std::shared_ptr<TaskDefinition> task = m_Queue.front();
-	m_Queue.pop();
-	return task;
+	runnnig_threads++;
+	registered_threads++;
 }
+
+void TaskQueue::UnRegisterThread()
+{
+	std::unique_lock<std::mutex> lock(m_QueueMutex);
+	runnnig_threads--;
+	registered_threads--;
+}
+
 
 void TaskQueue::SetIdleTask(std::shared_ptr<TaskDefinition> task)
 {
@@ -56,6 +60,7 @@ void TaskQueue::SetIdleTask(std::shared_ptr<TaskDefinition> task)
 
 void TaskQueue::Flush()
 {
+
 	on_push.notify_all();
 }
 
