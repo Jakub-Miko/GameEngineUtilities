@@ -13,6 +13,8 @@ public:
 
 	std::shared_ptr<TaskDefinition> Pop();
 
+	std::shared_ptr<TaskDefinition> PopExternal();
+
 	void SetIdleTask(std::shared_ptr<TaskDefinition> task);
 	
 	void Flush();

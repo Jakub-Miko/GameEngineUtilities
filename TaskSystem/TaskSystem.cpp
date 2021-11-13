@@ -23,6 +23,16 @@ TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 	m_Threads = std::vector<std::thread*>(m_Props.num_of_threads);
 }
 
+void TaskSystem::JoinedThreadLoopIteration()
+{
+	PROFILE("Load");
+	std::shared_ptr<TaskDefinition> task = m_Queue->PopExternal();
+	if (task) {
+		task->Run();
+	}
+	m_Pool->FlushDeallocations();
+}
+
 void TaskSystem::FlushDeallocations()
 {
 	m_Pool->FlushDeallocations();
@@ -107,6 +117,11 @@ void TaskSystem::DeleteTask(TaskDefinition* task,size_t size, size_t align)
 {
 	task->~TaskDefinition();
 	m_Pool->deallocate(task,size,align);
+}
+
+void TaskSystem::SetIdleTask(std::shared_ptr<TaskDefinition> task)
+{
+	m_Queue->SetIdleTask(task);
 }
 
 

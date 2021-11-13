@@ -22,11 +22,25 @@ std::shared_ptr<TaskDefinition> TaskQueue::Pop()
 		--runnnig_threads;
 		if (runnnig_threads == 0 && m_IdleTask) {
 			PROFILE("IDLE");
+			lock.unlock();
 			m_IdleTask->Run();
+			lock.lock();
 			m_IdleTask.reset();
 		}
 		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
 		++runnnig_threads;
+	}
+
+	std::shared_ptr<TaskDefinition> task = m_Queue.front();
+	m_Queue.pop();
+	return task;
+}
+
+std::shared_ptr<TaskDefinition> TaskQueue::PopExternal()
+{
+	std::unique_lock<std::mutex> lock(m_QueueMutex);
+	if (m_Queue.empty()) {
+		on_push.wait(lock, [this]() {return !m_Queue.empty(); });
 	}
 
 	std::shared_ptr<TaskDefinition> task = m_Queue.front();

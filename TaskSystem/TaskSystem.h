@@ -37,6 +37,8 @@ public:
 		m_Queue->Push(task);
 	}
 
+	void SetIdleTask(std::shared_ptr<TaskDefinition> task);
+
 	void Submit(std::shared_ptr<TaskDefinition> task) {
 		m_Queue->Push(task);
 	}
@@ -68,6 +70,15 @@ public:
 
 	void FlushDeallocations();
 
+	template<typename F>
+	auto JoinTaskSystem(F exit_condition_function) -> std::enable_if_t<std::is_same_v<std::invoke_result_t<F>,bool>,void>
+	{
+		while(!exit_condition_function() && m_runnning.load())
+		{
+			JoinedThreadLoopIteration();
+		}
+	}
+
 	void Run();
 
 	//Carefull flush happens only for task submitted before flush, if worker running workerthreads submit work after flush, a significant slowdown can occur, 
@@ -85,6 +96,8 @@ private:
 
 	static TaskSystem* instance;
 	TaskSystem(TaskSystemProps props);
+
+	void JoinedThreadLoopIteration();
 
 	std::atomic<bool> m_runnning = true;
 	std::unique_ptr<TaskQueue> m_Queue;
