@@ -1,5 +1,6 @@
 #pragma once
 #include "Task.h"
+#include <ThreadManager.h>
 #include "TaskQueue.h"
 #include <memory>
 #include <SynchronizedMultiPool.h>
@@ -109,7 +110,7 @@ private:
 
 	std::atomic<bool> m_runnning = true;
 	std::unique_ptr<TaskQueue> m_Queue;
-	std::vector<std::thread*> m_Threads;
+	std::vector<std::shared_ptr<ThreadObject>> m_Threads;
 	SynchronizedMultiPool<std::allocator<void>,true>* m_Pool;
 	TaskSystemProps m_Props;
 

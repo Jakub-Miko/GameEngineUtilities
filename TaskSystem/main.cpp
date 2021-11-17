@@ -48,6 +48,7 @@ int main() {
 		BEGIN_PROFILING("asdasd", "C:/Users/mainm/Desktop/GameEngine/Utility/TaskSystem/Profile_Result.json");
 		{
 			PROFILE("TaskSystem Start");
+			ThreadManager::Init();
 			TaskSystem::Initialize(TaskSystemProps{ 0 });
 
 			TaskSystem* system = TaskSystem::Get();
@@ -108,6 +109,7 @@ int main() {
 			std::cout << "End\n";
 		}
 		TaskSystem::Shutdown();
+		ThreadManager::Shutdown();
 		END_PROFILING();
 	}
 	_CrtDumpMemoryLeaks();

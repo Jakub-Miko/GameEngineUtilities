@@ -6,15 +6,23 @@
 #include <crtdbg.h>
 
 
+
+void Function(int int1, int int2) {
+	std::cout << "     " << int1 << int2 << "\n";
+	std::cout << "     " << ThreadManager::GetCurrentThread()->GetId() << "\n";
+}
+
+
 int main() {
 	{
 		ThreadManager::Init();
 
-		auto manager = ThreadManager::GetThreadManager();
+		auto manager = ThreadManager::Get();
 
 		std::cout << manager->GetMaxThreadCount() << "\n" << manager->GetAvailableThreadCount() << "\n";
 		
 		auto thread1 = manager->GetThread();
+		thread1->RunThread(Function, 5, 6);
 		std::cout << manager->GetAvailableThreadCount() << "\n";
 
 		{
@@ -25,9 +33,10 @@ int main() {
 		}
 		std::cout << manager->GetAvailableThreadCount() << "\n";
 
-		thread1.reset();
 
 		std::cout << manager->GetAvailableThreadCount() << "\n";
+		thread1->JoinThread();
+		thread1.reset();
 		ThreadManager::Shutdown();
 	}
 	_CrtDumpMemoryLeaks();

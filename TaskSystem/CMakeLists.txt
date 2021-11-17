@@ -9,4 +9,4 @@ add_library(TaskSystem "Task.h" "TaskSystem.h" "TaskSystemFence.cpp" "TaskSystem
 find_package(Threads)
 target_include_directories(TaskSystem PUBLIC .)
 target_link_libraries(TaskSystem PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(TaskSystem PUBLIC Profiler MemoryManagement)
+target_link_libraries(TaskSystem PUBLIC Profiler MemoryManagement ThreadManager)

@@ -16,11 +16,16 @@ TaskSystem::TaskSystem(TaskSystemProps props) : m_Props(props) {
 	m_Pool = new SynchronizedMultiPool<std::allocator<void>,true>(std::allocator<void>(), 32768);
 
 	if (!m_Props.num_of_threads) { 
-		m_Props.num_of_threads = std::thread::hardware_concurrency() - 1;
+		m_Props.num_of_threads = ThreadManager::Get()->GetAvailableThreadCount();
 	}
 	m_Queue.reset(new TaskQueue(m_Props.num_of_threads));
 
-	m_Threads = std::vector<std::thread*>(m_Props.num_of_threads);
+	m_Threads = std::vector<std::shared_ptr<ThreadObject>>(m_Props.num_of_threads);
+
+	for (auto& thread : m_Threads) {
+		thread = ThreadManager::Get()->GetThread();
+	}
+
 }
 
 void TaskSystem::JoinedThreadLoopIteration(uint32_t& sync,uint32_t& ref)
@@ -52,7 +57,7 @@ void TaskSystem::FlushDeallocations()
 void TaskSystem::Run()
 {
 	for (auto& thread : m_Threads) {
-		thread = new std::thread(ThreadLoop,m_Queue.get(),&m_runnning,m_Pool);
+		thread->RunThread(&ThreadLoop,m_Queue.get(),&m_runnning,m_Pool);
 	}
 }
 
@@ -88,8 +93,8 @@ TaskSystem::~TaskSystem()
 	m_runnning = false;
 	FlushLoop();
 	for (auto thread : m_Threads) {
-		thread->join();
-		delete thread;
+		thread->JoinThread();
+		thread.reset();
 	}
 	m_Queue->Clear();
 	startup_thread_finished = 0;
