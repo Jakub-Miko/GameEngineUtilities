@@ -8,6 +8,8 @@ thread_local std::shared_ptr<ThreadObject> ThreadManager::current_thread = nullp
 
 void ThreadManager::ResetThread(ThreadObject* ptr)
 {
+	ptr->ResetStateVariableList();
+	
 	ptr->SetState(nullptr);
 
 	m_FreeThreads.push_back(ptr);
@@ -79,7 +81,17 @@ std::shared_ptr<ThreadObject> ThreadManager::GetCurrentThread()
 	}
 }
 
+bool ThreadManager::IsValidThreadContext()
+{
+	return (bool)current_thread;
+}
+
 void ThreadObject::JoinThread()
 {
 	m_thread.join();
+}
+
+void ThreadObject::ResetStateVariableList()
+{
+	ThreadData.clear();
 }

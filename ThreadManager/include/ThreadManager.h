@@ -1,7 +1,10 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <stdexcept>
 #include <thread>
+#include <map>
+#include <TypeId.h>
 #include <utility>
 #include <mutex>
 
@@ -51,10 +54,30 @@ public:
 		if (m_thread.joinable()) {
 			m_thread.join();
 		}
+		ResetStateVariableList();
+
+	}
+	template<typename T>
+	void SetStateValue(T* value) {
+		ThreadData.insert_or_assign(TypeId<T, SequentialIdGenerator>(), value);
+	}
+
+	template<typename T>
+	T* GetStateValue() {
+		auto res = ThreadData.find(TypeId<T, SequentialIdGenerator>());
+		if (res == ThreadData.end()) {
+			throw std::runtime_error("No state value of this type could be found");
+		}
+		return reinterpret_cast<T*>(res->second);
+	}
+
+	template<typename T>
+	bool StateValueExists() {
+		return ThreadData.find(TypeId<T, SequentialIdGenerator>()) != ThreadData.end();
 	}
 
 private:
-	ThreadObject(int id) : thread_id(id), m_thread(), ThreadObject_share_pointer_state(nullptr) {};
+	ThreadObject(int id) : thread_id(id), m_thread(), ThreadObject_share_pointer_state(nullptr), ThreadData() {};
 
 	template<typename F, typename ... Args>
 	void ThreadProcess(F func, Args... args) {
@@ -68,8 +91,17 @@ private:
 		}
 	}
 
+	void ResetStateVariableList();
+
+
+
 	std::thread m_thread;
 	int thread_id;
+
+private:
+	
+	std::map<int,void*> ThreadData;
+
 };
 
 
@@ -95,6 +127,23 @@ public:
 	std::shared_ptr<ThreadObject> GetThread();
 
 	static std::shared_ptr<ThreadObject> GetCurrentThread();
+
+	template<typename T>
+	static T* GetThreadLocalData() {
+		return current_thread->GetStateValue<T>();
+	}
+
+	template<typename T>
+	static void SetThreadLocalData(T* data) {
+		current_thread->SetStateValue<T>(data);
+	}
+
+	template<typename T>
+	static bool ThreadLocalDataExists() {
+		return current_thread->StateValueExists<T>();
+	}
+
+	static bool IsValidThreadContext();
 
 	int GetMaxThreadCount() const {
 		return max_threads;
