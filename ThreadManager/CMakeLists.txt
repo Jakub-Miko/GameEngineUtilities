@@ -6,3 +6,4 @@ add_library(ThreadManager "ThreadManager.cpp")
 target_include_directories(ThreadManager PRIVATE ".")
 
 target_include_directories(ThreadManager PUBLIC "./include/")
+target_link_libraries(ThreadManager PUBLIC RuntimeTypeIdentifier)
