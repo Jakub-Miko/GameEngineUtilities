@@ -1,8 +1,8 @@
 #include <iostream>
 #include <LuaEngine.h>
-//#define _CRTDBG_MAP_ALLOC
-//#include <stdlib.h>
-//#include <crtdbg.h>
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 
 int get_sum(int n1, int n2) {
 	return n1 + n2;
@@ -129,7 +129,9 @@ int main(int argc, char* argv[]) {
 				},"_G");
 			std::cout << "Float is: " << engine.Call<float>("flt_sm", 1.5f, 1.6f) << "\n";
 			engine.Call("Test", &second);
-			std::cout << entity_1.Get_x() << ", " << entity_1.Get_y() << ", " << sizeof(engine) << "\n";
+			std::cout << entity_1.Get_x() << ", " << entity_1.Get_y() << ", " << sizeof(engine) << "\n\n\n";
+			std::cout << engine.Call<int>("table1", "OnUpdate", 5, 6) << "\n";
+
 		}
 		catch (std::invalid_argument& e) {
 			std::cout << "\nInvalid argument: " << e.what() << "\n";
@@ -141,6 +143,6 @@ int main(int argc, char* argv[]) {
 			std::cout << "\nAn Error occured\n";
 		}
 	}
-		//_CrtDumpMemoryLeaks();
+		_CrtDumpMemoryLeaks();
 	void();
 }

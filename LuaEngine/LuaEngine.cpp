@@ -192,6 +192,25 @@ bool LuaEngine::LoadCall(LuaEngine* L, const char* func_name)
 
 }
 
+bool LuaEngine::LoadCall(LuaEngine* L, const char* table_name, const char* func_name)
+{
+	lua_getglobal(L->GetState(), table_name);
+	if (lua_istable(L->GetState(), -1)) {
+		
+		lua_getfield(L->GetState(), -1,func_name);
+		if (lua_isfunction(L->GetState(), -1)) {
+			lua_getglobal(L->GetState(), table_name);
+			return true;
+		}
+		lua_pop(L->GetState(), 1);
+		DebugPrint("Function with name " << func_name << " doesn't exist.");
+	}
+	else {
+		DebugPrint("Table with name " << table_name << " doesn't exist.");
+	}
+	return false;
+}
+
 //static helper function, for calling lua function, uses lua_pcall internally.
 bool LuaEngine::Call_impl(LuaEngine* L, int args, int ret)
 {

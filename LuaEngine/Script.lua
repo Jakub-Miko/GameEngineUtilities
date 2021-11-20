@@ -35,3 +35,12 @@ function flt_sm(n1,n2)
 
 return FloatSum(n1,n2)
 end
+
+
+
+table1 = {}
+
+
+function table1:OnUpdate(num1, num2)
+return num1 + num2
+end

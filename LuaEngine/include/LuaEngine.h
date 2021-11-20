@@ -109,6 +109,40 @@ public:
 		throw std::invalid_argument(std::string("Function ") + function_name + " doesn't exist.");
 	}
 
+	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
+	// calls functions, and pops and returns the return value if any. 
+	//In the case of a failure while calling return default value and asserts.
+	template<typename R = void, typename ... Args>
+	R Call(const char* table_name, const char* function_name, Args ... args) {
+		if (LoadCall(this, table_name, function_name)) {
+			
+			(Set(m_LuaState, args), ...);
+
+			if (Call_impl(this, sizeof...(args)+1)) {
+
+				if constexpr (!std::is_void_v<R>) {
+
+					R ret_value;
+					Get(m_LuaState, -1, &ret_value);
+					clear_stack(m_LuaState, 2);
+					return ret_value;
+
+				}
+				else {
+
+					clear_stack(m_LuaState, 2);
+					return;
+
+				}
+			}
+			Assert("Break");
+			throw std::runtime_error(std::string("Function ") + function_name + " failed.");
+		}
+		clear_stack(m_LuaState,1);
+		Assert("Break");
+		throw std::invalid_argument(std::string("Function ") + function_name + " doesn't exist.");
+	}
+
 	//LuaEngine destructor closes lua_State
 	~LuaEngine();
 
@@ -149,6 +183,9 @@ protected:
 
 	//static helper function for pushing function onto the stack and checking its validity. 
 	static bool LoadCall(LuaEngine* L, const char* func_name);
+
+	//static helper function for pushing table function onto the stack and checking its validity. 
+	static bool LoadCall(LuaEngine* L,const char* table_name, const char* func_name);
 
 	//static helper function, for calling lua function, uses lua_pcall internally.
 	static bool Call_impl(LuaEngine* L, int args, int ret = 1);
