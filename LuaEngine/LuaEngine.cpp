@@ -111,6 +111,11 @@ void LuaEngine::AddBindings(const std::vector<LuaEngine_Function_Binding>& bindi
 
 }
 
+void LuaEngine::RunString(const std::string& code)
+{
+	luaL_dostring(m_LuaState, code.c_str());
+}
+
 //Internal Call Creates or gets an existing Context table, the binds function from the binding vector from 
 // start index. Used Internally by AddBindinds and Add Binding.
 void LuaEngine::SetBindings(std::vector<Lua_Function_Binding>& bindings, int startindex) {

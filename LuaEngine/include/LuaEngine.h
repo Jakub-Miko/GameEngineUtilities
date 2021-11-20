@@ -74,6 +74,7 @@ public:
 	//Adds multiple function bindings.
 	void AddBindings(const std::vector<LuaEngine_Function_Binding>& bindings);
 
+	void RunString(const std::string& code);
 	//Loads and runs a script from filepath, return true if succeeded false otherwise.
 	bool LoadFromFile(const char* filepath);
 
@@ -187,7 +188,6 @@ public:
 		if (LoadCall(this, table_name, function_name)) {
 
 			(Set(m_LuaState, args), ...);
-
 			if (Call_impl(this, sizeof...(args) + 1)) {
 
 				if constexpr (!std::is_void_v<R>) {
