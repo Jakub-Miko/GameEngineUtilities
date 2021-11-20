@@ -126,11 +126,29 @@ int main(int argc, char* argv[]) {
 				{"SetX" , LuaEngineClass<Entity>::InvokeClass<&Entity::Set_x> },
 				{"SetY" , LuaEngineClass<Entity>::InvokeClass<&Entity::Set_y> },
 				{"copy_values", LuaEngineClass<Entity>::InvokeClass<&Entity::copy_values>}
-				},"_G");
-			std::cout << "Float is: " << engine.Call<float>("flt_sm", 1.5f, 1.6f) << "\n";
+				}, "_G");
+			std::cout << "Float is: " << engine.Call<float>("flt_sm", 5, 1.6f) << "\n";
 			engine.Call("Test", &second);
 			std::cout << entity_1.Get_x() << ", " << entity_1.Get_y() << ", " << sizeof(engine) << "\n\n\n";
-			std::cout << engine.Call<int>("table1", "OnUpdate", 5, 6) << "\n";
+			std::cout << engine.CallObject<int>("table1", "OnUpdate", 5, 6) << "\n";
+			engine.CallObject("table2", "OnUpdate");
+
+			int out;
+			if (engine.TryCallObject<int>(&out,"table1", "OnUpdate", 5, 6))
+			{
+				std::cout << out << " Success\n";
+			}
+			else {
+				std::cout << "Error\n";
+			}
+
+			if (engine.TryCallObject<void>(nullptr,"table1", "OnUpdate"))
+			{
+				std::cout << "Success\n";
+			}
+			else {
+				std::cout << "Error\n";
+			}
 
 		}
 		catch (std::invalid_argument& e) {

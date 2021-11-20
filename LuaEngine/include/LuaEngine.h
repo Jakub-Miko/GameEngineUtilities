@@ -102,6 +102,7 @@ public:
 
 				}
 			}
+			clear_stack(m_LuaState, 1);
 			Assert("Break"); 
 			throw std::runtime_error(std::string("Function ") + function_name + " failed.");
 		}
@@ -113,7 +114,7 @@ public:
 	// calls functions, and pops and returns the return value if any. 
 	//In the case of a failure while calling return default value and asserts.
 	template<typename R = void, typename ... Args>
-	R Call(const char* table_name, const char* function_name, Args ... args) {
+	R CallObject(const char* table_name, const char* function_name, Args ... args) {
 		if (LoadCall(this, table_name, function_name)) {
 			
 			(Set(m_LuaState, args), ...);
@@ -135,6 +136,7 @@ public:
 
 				}
 			}
+			clear_stack(m_LuaState, 2);
 			Assert("Break");
 			throw std::runtime_error(std::string("Function ") + function_name + " failed.");
 		}
@@ -142,6 +144,75 @@ public:
 		Assert("Break");
 		throw std::invalid_argument(std::string("Function ") + function_name + " doesn't exist.");
 	}
+
+
+	//template function for easy lua function calls from c++, pushes the function onto the stack, pushes arguments, 
+	// calls functions, and pops and returns the return value if any. 
+	//In the case of a failure while calling return default value and asserts.
+	template<typename R = void, typename ... Args>
+	bool TryCall(R* out,const char* function_name, Args ... args) {
+		if (LoadCall(this, function_name)) {
+
+			(Set(m_LuaState, args), ...);
+
+			if (Call_impl(this, sizeof...(args))) {
+
+				if constexpr (!std::is_void_v<R>) {
+
+					R ret_value;
+					Get(m_LuaState, -1, &ret_value);
+					clear_stack(m_LuaState, 1);
+					*out = ret_value;
+					return true;
+
+				}
+				else {
+
+					clear_stack(m_LuaState, 1);
+					return true;
+
+				}
+			}
+			clear_stack(m_LuaState, 1);
+			return false;
+		}
+		return false;
+	}
+
+	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
+	// calls functions, and pops and returns the return value if any. 
+	//In the case of a failure while calling return default value and asserts.
+	template<typename R = void, typename ... Args>
+	bool TryCallObject(R* out,const char* table_name, const char* function_name, Args ... args) {
+		if (LoadCall(this, table_name, function_name)) {
+
+			(Set(m_LuaState, args), ...);
+
+			if (Call_impl(this, sizeof...(args) + 1)) {
+
+				if constexpr (!std::is_void_v<R>) {
+
+					R ret_value;
+					Get(m_LuaState, -1, &ret_value);
+					clear_stack(m_LuaState, 2);
+					*out = ret_value;
+					return true;
+
+				}
+				else {
+
+					clear_stack(m_LuaState, 2);
+					return true;
+
+				}
+			}
+			clear_stack(m_LuaState, 2);
+			return false;
+		}
+		clear_stack(m_LuaState, 1);
+		return false;
+	}
+
 
 	//LuaEngine destructor closes lua_State
 	~LuaEngine();

@@ -15,7 +15,13 @@ bool LuaEngine::Check(int result) {
 	}
 	else {
 		try {
-			DebugPrint(lua_tostring(m_LuaState, -1));
+			if (lua_isstring(m_LuaState, -1)) {
+				DebugPrint(lua_tostring(m_LuaState, -1));
+			}
+			else {
+				return false;
+			}
+
 			return false;
 		}
 		catch (...) {
