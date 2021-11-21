@@ -113,7 +113,7 @@ void LuaEngine::AddBindings(const std::vector<LuaEngine_Function_Binding>& bindi
 
 void LuaEngine::RunString(const std::string& code)
 {
-	luaL_dostring(m_LuaState, code.c_str());
+	Check(luaL_dostring(m_LuaState, code.c_str()));
 }
 
 //Internal Call Creates or gets an existing Context table, the binds function from the binding vector from 
