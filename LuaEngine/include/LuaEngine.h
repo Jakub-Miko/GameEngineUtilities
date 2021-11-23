@@ -32,7 +32,53 @@
 struct lua_State;
 struct luaL_Reg;
 
+class LuaEngine;
 #pragma region BASE
+
+class LuaEngineProxy {
+public:
+	friend LuaEngine;
+	
+	template<typename T>
+	void SetTableItem(const T& value, const std::string& name) {
+		LuaEngine::Set(state, value);
+		Set_Field(name, -2);
+	}
+
+	template<typename T>
+	T GetTableField(const std::string& name, int index = -1){
+		Get_Field(name, index);
+		T value;
+		LuaEngine::Get(state, -1, &value);
+		LuaEngine::clear_stack(state,1);
+		return value;
+	}
+
+private:
+	LuaEngineProxy(lua_State* state) : state(state) {}
+
+	void Set_Field(const std::string& name, int index = -1);
+
+	void Get_Field(const std::string& name, int index = -1);
+
+
+
+	lua_State* state;
+};
+
+
+template<typename T>
+class LuaEngineObjectDelegate {
+public:
+
+	static void SetObject(LuaEngineProxy proxy, const T& value) {
+		static_assert("No lua object delegate found for this type of object");
+	}
+
+	static T GetObject(LuaEngineProxy proxy, int index = -1) {
+		static_assert("No lua object delegate found for this type of object");
+	}
+};
 
 //Default Class with support for pure functions.
 //Supports easy function binding and calling.
@@ -48,7 +94,7 @@ public:
 	};
 
 public:
-	
+	friend LuaEngineProxy;
 	//Default Constructor Creates Lua State and load libs.
 	LuaEngine();
 
@@ -244,10 +290,12 @@ public:
 	bool Check(int result);
 
 protected:
-	
+
 	//Internal Call Creates or gets an existing Context table, the binds function from the binding vector from 
 	// start index. Used Internally by AddBindinds and Add Binding.
 	void SetBindings(std::vector<Lua_Function_Binding>& bindings, int startindex = 0);
+
+	static void Create_Table(lua_State* L);
 
 	//static helper function for clearing lua stack, calls lua_pop internally.
 	static void clear_stack(lua_State *L, int num_elements);
@@ -289,6 +337,12 @@ protected:
 		Get(L, index, (void**)ptr, (int)TypeId<T>());
 	}
 
+	template<typename T>
+	static void Get(lua_State* l, int index,T* out) {
+		*out = LuaEngineObjectDelegate<T>::GetObject(LuaEngineProxy(l),index);
+	}
+
+
 	//Pushes integer onto the stack
 	static void Set(lua_State* L, int number);
 
@@ -306,6 +360,12 @@ protected:
 	template<typename T, typename dummy = typename T::type_id_gen>
 	static void Set(lua_State* L, T* ref) {
 		Set(L, (void*)ref, (int)TypeId<T>());
+	}
+
+	template<typename T>
+	static void Set(lua_State* l, const T& value) {
+		Create_Table(l);
+		LuaEngineObjectDelegate<T>::SetObject(LuaEngineProxy(l),value);
 	}
 
 	//recursive template which Iterates through the member types of an input tuple and sets its values from the stack,

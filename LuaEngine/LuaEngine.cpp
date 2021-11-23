@@ -111,6 +111,21 @@ void LuaEngine::AddBindings(const std::vector<LuaEngine_Function_Binding>& bindi
 
 }
 
+void LuaEngineProxy::Set_Field(const std::string& name, int index)
+{
+	lua_setfield(state, index, name.c_str());
+}
+
+void LuaEngineProxy::Get_Field(const std::string& name, int index)
+{
+	lua_getfield(state, index, name.c_str());
+}
+
+void LuaEngine::Create_Table(lua_State* L)
+{
+	lua_newtable(L);
+}
+
 //Internal Call Creates or gets an existing Context table, the binds function from the binding vector from 
 // start index. Used Internally by AddBindinds and Add Binding.
 void LuaEngine::SetBindings(std::vector<Lua_Function_Binding>& bindings, int startindex) {

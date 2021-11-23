@@ -50,7 +50,8 @@ private:
 public:
 	using type_id_gen = SequentialIdGenerator;
 	Entity(int x, int y) : x(x), y(y) {};
-	
+	Entity() : x(0),y(0) {}
+
 	void Set_y(int y) {
 		this->y = y;
 	}
@@ -72,6 +73,20 @@ public:
 		y = other->y;
 	}
 
+};
+
+template<>
+class LuaEngineObjectDelegate<Entity> {
+public:
+	
+	static void SetObject(LuaEngineProxy proxy, const Entity& value) {
+		proxy.SetTableItem(value.Get_x(), "x");
+		proxy.SetTableItem(value.Get_y(), "y");
+	}
+
+	static Entity GetObject(LuaEngineProxy proxy, int index = -1) {
+		return Entity(proxy.GetTableField<int>("x", index), proxy.GetTableField<int>("y", index));
+	}
 };
 
 
@@ -149,6 +164,11 @@ int main(int argc, char* argv[]) {
 			else {
 				std::cout << "Error\n";
 			}
+
+			std::cout << "-----------------------------------------------------------------\n";
+
+			Entity ent_test = engine.Call<Entity>("ObjectTest", Entity(888, 91));
+			std::cout << ent_test.Get_x() << ", " << ent_test.Get_y() << "\n";
 
 		}
 		catch (std::invalid_argument& e) {

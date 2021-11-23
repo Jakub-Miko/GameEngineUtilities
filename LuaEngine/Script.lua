@@ -44,6 +44,12 @@ function table1:OnUpdate(num1, num2)
 return num1 + num2
 end
 
+function ObjectTest(value) 
+	print(value.x)
+	print(value.y)
+	return {x = 9, y = 9}
+end
+
 
 table2 = {}
 
