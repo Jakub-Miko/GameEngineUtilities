@@ -81,6 +81,16 @@ std::shared_ptr<ThreadObject> ThreadManager::GetCurrentThread()
 	}
 }
 
+void ThreadManager::JoinedThreadRegister(std::shared_ptr<ThreadObject>& thread)
+{
+	current_thread = thread;
+}
+
+void ThreadManager::JoinedThreadUnRegister()
+{
+	current_thread.reset();
+}
+
 bool ThreadManager::IsValidThreadContext()
 {
 	return (bool)current_thread;

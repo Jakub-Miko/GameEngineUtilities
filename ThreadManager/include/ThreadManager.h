@@ -143,6 +143,10 @@ public:
 		return current_thread->StateValueExists<T>();
 	}
 
+	void JoinedThreadRegister(std::shared_ptr<ThreadObject>& thread);
+
+	void JoinedThreadUnRegister();
+
 	static bool IsValidThreadContext();
 
 	int GetMaxThreadCount() const {

@@ -120,6 +120,7 @@ public:
 	//Adds multiple function bindings.
 	void AddBindings(const std::vector<LuaEngine_Function_Binding>& bindings);
 
+	void RunString(const std::string& code);
 	//Loads and runs a script from filepath, return true if succeeded false otherwise.
 	bool LoadFromFile(const char* filepath);
 
@@ -233,7 +234,6 @@ public:
 		if (LoadCall(this, table_name, function_name)) {
 
 			(Set(m_LuaState, args), ...);
-
 			if (Call_impl(this, sizeof...(args) + 1)) {
 
 				if constexpr (!std::is_void_v<R>) {
@@ -401,7 +401,7 @@ private:
 protected:
 	//lua Context Table name, this is the table name uder which c++ functions are bound in lua.
 	//Note: Needs to be owned by an object which has superset lifetime of LuaEngine. 
-	const char* m_ContextName = "Context";
+	const char* m_ContextName = "_G";
 };
 
 //Invoke_impl used for calling parametrized pure functions from lua.
@@ -614,7 +614,7 @@ public:
 		const char* filepath,
 		class_type* instance = nullptr,
 		const std::vector<LuaEngine_Function_Binding>& bindings = std::vector<LuaEngine_Function_Binding>(),
-		const char* BingingContextName = "Context") 
+		const char* BingingContextName = "_G") 
 	{
 		LuaEngineClass<class_type> engine;
 		engine.SetClassInstance(instance);
