@@ -42,12 +42,12 @@ public:
 	template<typename T>
 	void SetTableItem(const T& value, const std::string& name) {
 		LuaEngine::Set(state, value);
-		Set_Field(name, -2);
+		LuaEngine::Set_Field(state,name, -2);
 	}
 
 	template<typename T>
 	T GetTableField(const std::string& name, int index = -1){
-		Get_Field(name, index);
+		LuaEngine::Get_Field(state,name, index);
 		T value;
 		LuaEngine::Get(state, -1, &value);
 		LuaEngine::clear_stack(state,1);
@@ -56,12 +56,6 @@ public:
 
 private:
 	LuaEngineProxy(lua_State* state) : state(state) {}
-
-	void Set_Field(const std::string& name, int index = -1);
-
-	void Get_Field(const std::string& name, int index = -1);
-
-
 
 	lua_State* state;
 };
@@ -297,6 +291,11 @@ protected:
 
 	static void Create_Table(lua_State* L);
 
+	static void Set_Field(lua_State* L, const std::string& name, int index = -1);
+
+	static void Get_Field(lua_State* L, const std::string& name, int index = -1);
+
+	static bool CheckTable(lua_State* L, int index);
 	//static helper function for clearing lua stack, calls lua_pop internally.
 	static void clear_stack(lua_State *L, int num_elements);
 
@@ -324,7 +323,7 @@ protected:
 	//static helper function, for getting const char ptr from the stack.
 	//Note: lifetime of this string is bound to the lifetime on the stack, so it should be used scarcly.
 	static void Get(lua_State* L, int index, const char** out);
-
+	
 	//This function is internally called by 'template<typename T> static void Get(lua_State*,int,T**)'
 	static void Get(lua_State* L, int index, void** ptr, int id);
 	
@@ -339,7 +338,12 @@ protected:
 
 	template<typename T>
 	static void Get(lua_State* l, int index,T* out) {
-		*out = LuaEngineObjectDelegate<T>::GetObject(LuaEngineProxy(l),index);
+		
+		if (CheckTable(l, index)) {
+			*out = LuaEngineObjectDelegate<T>::GetObject(LuaEngineProxy(l),index);
+		} else {
+			throw std::runtime_error("Parameter is not a table.");
+		}
 	}
 
 

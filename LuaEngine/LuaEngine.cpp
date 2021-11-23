@@ -110,19 +110,26 @@ void LuaEngine::AddBindings(const std::vector<LuaEngine_Function_Binding>& bindi
 	SetBindings(*m_functions, index);
 
 }
-void LuaEngineProxy::Set_Field(const std::string& name, int index)
-{
-	lua_setfield(state, index, name.c_str());
-}
 
-void LuaEngineProxy::Get_Field(const std::string& name, int index)
-{
-	lua_getfield(state, index, name.c_str());
-}
 
 void LuaEngine::Create_Table(lua_State* L)
 {
 	lua_newtable(L);
+}
+
+void LuaEngine::Set_Field(lua_State* L, const std::string& name, int index)
+{
+	lua_setfield(L, index, name.c_str());
+}
+
+void LuaEngine::Get_Field(lua_State* L, const std::string& name, int index)
+{
+	lua_getfield(L, index, name.c_str());
+}
+
+bool LuaEngine::CheckTable(lua_State* L, int index)
+{
+	return lua_istable(L, index);
 }
 
 void LuaEngine::RunString(const std::string& code)
