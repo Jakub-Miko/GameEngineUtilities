@@ -183,6 +183,11 @@ void LuaEngine::Set(lua_State* L, int number) {
 	lua_pushinteger(L, number);
 }
 
+void LuaEngine::Set(lua_State* L, bool number)
+{
+	lua_pushboolean(L, number);
+}
+
 //pushes string onto the stack.
 void LuaEngine::Set(lua_State* L, std::string str) {
 	lua_pushstring(L, str.c_str());
@@ -190,6 +195,11 @@ void LuaEngine::Set(lua_State* L, std::string str) {
 
 //pushes float onto the stack.
 void LuaEngine::Set(lua_State* L, float flt)
+{
+	lua_pushnumber(L, flt);
+}
+
+void LuaEngine::Set(lua_State* L, double flt)
 {
 	lua_pushnumber(L, flt);
 }
@@ -290,6 +300,30 @@ void LuaEngine::Get(lua_State* L, int index, float* out)
 	throw std::invalid_argument(std::string("Parameter ") + std::to_string(index) + " is not a float");
 
 	*out = 0.0f;
+}
+
+void LuaEngine::Get(lua_State* L, int index, double* out)
+{
+	if (lua_isnumber(L, index)) {
+		*out = lua_tonumber(L, index);
+		return;
+	}
+	Assert("Break");
+	throw std::invalid_argument(std::string("Parameter ") + std::to_string(index) + " is not a double");
+
+	*out = 0.0;
+}
+
+void LuaEngine::Get(lua_State* L, int index, bool* out)
+{
+	if (lua_isboolean(L, index)) {
+		*out = lua_toboolean(L, index);
+		return;
+	}
+	Assert("Break");
+	throw std::invalid_argument(std::string("Parameter ") + std::to_string(index) + " is not a bool");
+
+	*out = false;
 }
 
 //static helper function, for getting const char ptr from the stack.

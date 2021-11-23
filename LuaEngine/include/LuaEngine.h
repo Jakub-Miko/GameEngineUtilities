@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <tuple>
 #include <memory>
@@ -66,11 +67,11 @@ class LuaEngineObjectDelegate {
 public:
 
 	static void SetObject(LuaEngineProxy proxy, const T& value) {
-		static_assert("No lua object delegate found for this type of object");
+		static_assert(false,"No lua object delegate found for this type of object");
 	}
 
 	static T GetObject(LuaEngineProxy proxy, int index = -1) {
-		static_assert("No lua object delegate found for this type of object");
+		static_assert(false, "No lua object delegate found for this type of object");
 	}
 };
 
@@ -320,6 +321,12 @@ protected:
 	//static helper function, for getting float from the stack.
 	static void Get(lua_State* L, int index, float* out);
 
+	//static helper function, for getting double from the stack.
+	static void Get(lua_State* L, int index, double* out);
+
+	//static helper function, for getting bool from the stack.
+	static void Get(lua_State* L, int index, bool* out);
+
 	//static helper function, for getting const char ptr from the stack.
 	//Note: lifetime of this string is bound to the lifetime on the stack, so it should be used scarcly.
 	static void Get(lua_State* L, int index, const char** out);
@@ -350,11 +357,17 @@ protected:
 	//Pushes integer onto the stack
 	static void Set(lua_State* L, int number);
 
+	//Pushes bool onto the stack
+	static void Set(lua_State* L, bool number);
+
 	//pushes string onto the stack.
 	static void Set(lua_State* L, std::string str);
 	
 	//pushes float onto the stack.
 	static void Set(lua_State* L, float flt);
+
+	//pushes double onto the stack.
+	static void Set(lua_State* L, double flt);
 
 	//pushes void ptr onto the stack.
 	static void Set(lua_State* L, void* ptr, int id);
