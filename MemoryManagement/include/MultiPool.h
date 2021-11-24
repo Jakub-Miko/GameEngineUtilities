@@ -41,7 +41,7 @@ public:
 	MultiPool(const Allocator& alloc = std::allocator<void>(), size_t default_pool_chunk_size = 256)
 		: upstream_alloc(alloc), default_pool_chunk_size(default_pool_chunk_size), m_Pools(alloc)
 	{
-
+		m_Pools.reserve(0);
 	}
 
 

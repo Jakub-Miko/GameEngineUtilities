@@ -34,7 +34,7 @@ public:
 	SynchronizedMultiPool(const Allocator& alloc = std::allocator<void>(), size_t default_pool_chunk_size = 256) 
 		: default_pool_chunk_size(default_pool_chunk_size), alloc(alloc), sync_mutex(), m_MultiPools(alloc)
 	{
-		m_MultiPools.reserve(10000);
+		m_MultiPools.reserve(std::thread::hardware_concurrency());
 		InitializePools(std::this_thread::get_id());
 	}
 
