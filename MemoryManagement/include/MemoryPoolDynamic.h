@@ -71,8 +71,7 @@ public:
 	size_t num_of_deallocs = 0;
 	free_block* head = nullptr;
 	free_block* tail = nullptr;
-	private:
-		std::mutex m_lock;
+	std::mutex m_lock;
 	};
 
 	friend Chunk_impl<deffered_deallocation, MemoryPool<Allocator, stateful, deffered_deallocation>>;
@@ -231,12 +230,15 @@ public:
 	//Should only be called in singlethread system, or from thread owning the pool!!!
 	void FlushDeallocations() {
 		if constexpr (deffered_deallocation) {
+			std::lock_guard<std::mutex> lock(dealloc_flush_mutex);
 			for (auto chunk : m_Chunks) {
 				deallocation_list& dealloc_list = chunk->dealloc_list;
-				if (dealloc_list.head) {
+				std::unique_lock<std::mutex> lock2(dealloc_list.m_lock);
+					if (dealloc_list.head) {
 					dealloc_list.tail->next = chunk->freelist_head;
 					chunk->freelist_head = dealloc_list.head;
 					chunk->available += dealloc_list.num_of_deallocs;
+					lock2.unlock();
 					dealloc_list.clear();
 				}
 			}
@@ -262,7 +264,7 @@ public:
 		Chunk_Allocator c_alloc(upstream_alloc);
 		for (auto chunk : m_Chunks) {
 			std::allocator_traits<Block_Allocator>::deallocate(b_alloc, chunk->base, chunk->capacity * block_size);
-			std::allocator_traits<Chunk_Allocator>::deallocate(c_alloc, chunk, 1);
+			std::allocator_traits<Chunk_Allocator>::deallocate(c_alloc, chunk, 1);  
 		}
 		m_Chunks.clear();
 	}
@@ -331,6 +333,7 @@ private:
 	size_t block_size;
 	std::vector<Chunk*, ChunkPtr_Allocator> m_Chunks;
 	size_t next_chunk_size;
+	std::mutex dealloc_flush_mutex;
 	const Allocator upstream_alloc;
 	Chunk* current_chunk;
 };
