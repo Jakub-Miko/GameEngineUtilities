@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <TypeId.h>
+#include <cassert>
 #include <stdexcept>
 
 // Debug code for assertions 
@@ -32,48 +33,39 @@
 //Forward declarations in the case Engine wants to use lua_State directly.
 struct lua_State;
 struct luaL_Reg;
-
+class LuaEngineProxy;
 class LuaEngine;
 #pragma region BASE
 
 class LuaEngineProxy {
 public:
 	friend LuaEngine;
-	
-	template<typename T>
-	void SetTableItem(const T& value, const std::string& name) {
-		LuaEngine::Set(state, value);
-		LuaEngine::Set_Field(state,name, -2);
-	}
 
 	template<typename T>
-	T GetTableField(const std::string& name, int index = -1){
-		LuaEngine::Get_Field(state,name, index);
-		T value;
-		LuaEngine::Get(state, -1, &value);
-		LuaEngine::clear_stack(state,1);
-		return value;
-	}
+	void SetTableItem(const T& value, const std::string& name);
+
+	template<typename T>
+	T GetTableField(const std::string& name, int index = -1);
 
 private:
-	LuaEngineProxy(lua_State* state) : state(state) {}
+	LuaEngineProxy(lua_State* state);
 
 	lua_State* state;
 };
-
 
 template<typename T>
 class LuaEngineObjectDelegate {
 public:
 
 	static void SetObject(LuaEngineProxy proxy, const T& value) {
-		static_assert(false,"No lua object delegate found for this type of object");
+		assert(false);
 	}
 
 	static T GetObject(LuaEngineProxy proxy, int index = -1) {
-		static_assert(false, "No lua object delegate found for this type of object");
+		assert(false);
 	}
 };
+
 
 //Default Class with support for pure functions.
 //Supports easy function binding and calling.
@@ -420,6 +412,28 @@ protected:
 	//Note: Needs to be owned by an object which has superset lifetime of LuaEngine. 
 	const char* m_ContextName = "_G";
 };
+
+
+
+	
+template<typename T>
+void LuaEngineProxy::SetTableItem(const T& value, const std::string& name) {
+	LuaEngine::Set(state, value);
+	LuaEngine::Set_Field(state, name, -2);
+}
+
+template<typename T>
+T LuaEngineProxy::GetTableField(const std::string& name, int index) {
+	LuaEngine::Get_Field(state, name, index);
+	T value;
+	LuaEngine::Get(state, -1, &value);
+	LuaEngine::clear_stack(state, 1);
+	return value;
+}
+
+inline LuaEngineProxy::LuaEngineProxy(lua_State* state) : state(state) {}
+
+
 
 //Invoke_impl used for calling parametrized pure functions from lua.
 template<typename R, typename ... Args>

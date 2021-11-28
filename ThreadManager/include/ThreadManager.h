@@ -80,16 +80,7 @@ private:
 	ThreadObject(int id) : thread_id(id), m_thread(), ThreadObject_share_pointer_state(nullptr), ThreadData() {};
 
 	template<typename F, typename ... Args>
-	void ThreadProcess(F func, Args... args) {
-		ThreadManager::current_thread = GetSharedFromThis();
-		if (ThreadManager::current_thread) {
-			func(args...);
-			ThreadManager::current_thread = nullptr;
-		}
-		else {
-			throw std::runtime_error("This ThreadObject is Invalid");
-		}
-	}
+	void ThreadProcess(F func, Args... args);
 
 	void ResetStateVariableList();
 
@@ -181,3 +172,16 @@ private:
 
 
 };
+
+
+template<typename F, typename ... Args>
+void ThreadObject::ThreadProcess(F func, Args... args) {
+	ThreadManager::current_thread = GetSharedFromThis();
+	if (ThreadManager::current_thread) {
+		func(args...);
+		ThreadManager::current_thread = nullptr;
+	}
+	else {
+		throw std::runtime_error("This ThreadObject is Invalid");
+	}
+}
