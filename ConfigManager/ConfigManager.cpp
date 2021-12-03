@@ -1,5 +1,5 @@
 #include "ConfigManager.h"
-#include <dependencies/json.hpp>
+#include <json.hpp>
 #include <sstream>
 #include "include/ConfigManager.h"
 #include <stdexcept>

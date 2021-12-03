@@ -2,10 +2,48 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
+#include <stdexcept>
+#include <sstream>
 #include <FileManager.h>
+#include <json.hpp>
 
-std::string LuaEngineUtilities::ParseScript(std::string script, const std::string& hash)
+std::string LuaEngineUtilities::ParseScript(std::string script_in, const std::string& hash, bool construction)
 {
+    std::string json_script;
+    std::string script;
+    if (script_in[0] == '@') {
+        size_t end = script_in.find_first_of(" \t\n", 1);
+
+        if (end == script_in.npos) {
+            throw std::runtime_error("Invalid entity file format");
+        }
+
+        std::string tag = script_in.substr(1, end - 1);
+
+        if (tag == "Entity") {
+            
+            auto script_bg = script_in.find(construction ? "@Entity:Construction_Script" : "@Entity:Inline_Script" , 0);
+            if (script_bg != script_in.npos) {
+                script_bg += strlen(construction ? "@Entity:Construction_Script" : "@Entity:Inline_Script");
+                auto end = script_in.find("@Entity", script_bg);
+                std::string parsed_script;
+                if (end == script_in.npos) {
+                    parsed_script = script_in.substr(script_bg, script_in.npos);
+                }
+                else {
+                    parsed_script = script_in.substr(script_bg, end - script_bg);
+                }
+                script = parsed_script;
+            }
+        }
+        else {
+            throw std::runtime_error("This entity descriptor doesn't support scripts");
+        }
+    }
+    else {
+        script = script_in;
+    }
+    
     size_t pos = 0;
     const char* delim = "( \n\t";
     while (pos != script.npos) {
@@ -24,14 +62,14 @@ std::string LuaEngineUtilities::ParseScript(std::string script, const std::strin
     return stream.str() + script;
 }
 
-std::string LuaEngineUtilities::LoadScript(const std::string& path)
+std::string LuaEngineUtilities::LoadScript(const std::string& path, bool construction)
 {
     std::ifstream file_in(FileManager::Get()->GetAssetFilePath(path));
     if (file_in.is_open()) {
         std::stringstream stream;
         stream << file_in.rdbuf();
         std::string file = stream.str();
-        std::string script = ParseScript(file, ScriptHash(path));
+        std::string script = ParseScript(file, ScriptHash(path, construction), construction);
         return script;
     }
     else {
@@ -40,10 +78,10 @@ std::string LuaEngineUtilities::LoadScript(const std::string& path)
 }
 
 
-std::string LuaEngineUtilities::ScriptHash(std::string script_path)
+std::string LuaEngineUtilities::ScriptHash(std::string script_path, bool construction)
 {
     std::replace(script_path.begin(), script_path.end(), '/', '_');
     auto first = script_path.find_first_of('.', 0);
 
-    return "Object_" + script_path.substr(0, first);
+    return (construction ? "Construction_" : "Object_") + script_path.substr(0, first);
 }

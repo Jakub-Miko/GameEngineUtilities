@@ -11,7 +11,7 @@ target_compile_definitions(LuaEngine PRIVATE DISABLE_ASSERTS)
 find_package(Threads)
 
 target_link_libraries(LuaEngine PRIVATE lua ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(LuaEngine PUBLIC Profiler RuntimeTypeIdentifier FileManager)
+target_link_libraries(LuaEngine PUBLIC Profiler RuntimeTypeIdentifier FileManager ConfigManager JsonParser)
 target_include_directories(LuaEngine PRIVATE ".")
 target_include_directories(LuaEngine PUBLIC "./include/")
 

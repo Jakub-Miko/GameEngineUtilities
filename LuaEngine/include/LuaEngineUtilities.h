@@ -4,8 +4,7 @@
 
 class LuaEngineUtilities {
 public:
-	static std::string ParseScript(std::string script, const std::string& hash);
-	static std::string LoadScript(const std::string& path);
-	static std::string ScriptHash(std::string script_path);
-
+	static std::string ParseScript(std::string script, const std::string& hash, bool construction = false);
+	static std::string LoadScript(const std::string& path, bool construction = false);
+	static std::string ScriptHash(std::string script_path, bool construction = false);
 };
