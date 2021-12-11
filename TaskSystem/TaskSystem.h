@@ -84,7 +84,28 @@ public:
 		JoinedThreadLoopShutdown();
 	}
 
-	void Run();
+	template<typename F>
+	void Run(F func)
+	{
+		for (auto& thread : m_Threads) {
+			thread->RunThread(&StartThreadLoop<F>, func, m_Queue.get(), &m_runnning, m_Pool);
+		}
+	}
+
+	template<typename F,typename FO>
+	void Run(F func,FO func_out)
+	{
+		for (auto& thread : m_Threads) {
+			thread->RunThread(&StartThreadLoop<F,FO>, func, func_out, m_Queue.get(), &m_runnning, m_Pool);
+		}
+	}
+
+	void Run()
+	{
+		for (auto& thread : m_Threads) {
+			thread->RunThread(&ThreadLoop, m_Queue.get(), &m_runnning, m_Pool);
+		}
+	}
 
 	//Carefull flush happens only for task submitted before flush, if worker running workerthreads submit work after flush, a significant slowdown can occur, 
 	//this can be avoided by submitting task from a single thread.
@@ -107,6 +128,19 @@ private:
 	void JoinedThreadLoopIteration(uint32_t& sync,uint32_t& ref);
 	void JoinedThreadLoopInit();
 	void JoinedThreadLoopShutdown();
+
+	template<typename F>
+	static void StartThreadLoop(F func, TaskQueue* queue, std::atomic<bool>* run, SynchronizedMultiPool<std::allocator<void>, true>* pool) {
+		func();
+		ThreadLoop(queue, run, pool);
+	}
+
+	template<typename F,typename FO>
+	static void StartThreadLoop(F func_in, FO func_out, TaskQueue* queue, std::atomic<bool>* run, SynchronizedMultiPool<std::allocator<void>, true>* pool) {
+		func_in();
+		ThreadLoop(queue, run, pool);
+		func_out();
+	}
 
 	std::atomic<bool> m_runnning = true;
 	std::unique_ptr<TaskQueue> m_Queue;

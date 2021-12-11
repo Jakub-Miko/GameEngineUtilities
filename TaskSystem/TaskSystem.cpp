@@ -53,15 +53,6 @@ void TaskSystem::FlushDeallocations()
 	m_Pool->FlushDeallocations();
 }
 
-
-void TaskSystem::Run()
-{
-	for (auto& thread : m_Threads) {
-		thread->RunThread(&ThreadLoop,m_Queue.get(),&m_runnning,m_Pool);
-	}
-}
-
-
 //Carefull flush happens only for task submitted before flush, if worker running workerthreads submit work after flush, a significant slowdown can occur, 
 //this can be avoided by submitting task from a single thread.
 //FLUSH CAN ONLY BE CALLED BY MAINTHREAD, OTHWERWISE IT'S UNDEFINED BEHAVIOR
