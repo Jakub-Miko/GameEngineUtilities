@@ -304,6 +304,9 @@ protected:
 	//static helper function, for getting pointer to lua_states extra space.
 	static void* GetExtraSpace(lua_State* L);
 
+	//static helper function, for setting pointer to lua_states extra space.
+	static void SetExtraSpace(lua_State* L, void* ptr);
+
 	//static helper function, for getting integer from the stack.
 	static void Get(lua_State* L, int index, int* out);
 
@@ -539,7 +542,7 @@ public:
 	//Sets the instance of the class
 	void SetClassInstance(class_type* instance) {
 		
-		*(static_cast<class_type**>(GetExtraSpace(GetState()))) = instance;
+		SetExtraSpace(GetState(),(void*)instance);
 
 	}
 
@@ -548,7 +551,7 @@ public:
 	template<typename R>
 	static int Invoke_impl_class(lua_State* L, R(class_type::*func)()) {
 		
-		class_type* instance = *(static_cast<class_type**>(GetExtraSpace(L)));
+		class_type* instance = static_cast<class_type*>(GetExtraSpace(L));
 
 		if constexpr (!std::is_void_v<R>) {
 
@@ -568,7 +571,7 @@ public:
 	// used for non-const parametrized member functions
 	template<typename R,typename ... Args>
 	static int Invoke_impl_class(lua_State* L, R(class_type::*func)(Args...)) {
-		class_type* instance = *(static_cast<class_type**>(GetExtraSpace(L)));
+		class_type* instance = static_cast<class_type*>(GetExtraSpace(L));
 		std::tuple<Args...> values;
 		Invoke_Iterate<0, Args...>(L, values);
 
@@ -592,7 +595,7 @@ public:
 	// used for const non-parametrized member functions
 	template<typename R>
 	static int Invoke_impl_class(lua_State* L, R(class_type::* func)() const ) {
-		class_type* instance = *(static_cast<class_type**>(GetExtraSpace(L)));
+		class_type* instance = static_cast<class_type*>(GetExtraSpace(L));
 
 		if constexpr (!std::is_void_v<R>) {
 
@@ -614,7 +617,7 @@ public:
 	template<typename R, typename ... Args>
 	static int Invoke_impl_class(lua_State* L, R(class_type::* func)(Args...) const) {
 
-		class_type* instance = *(static_cast<class_type**>(GetExtraSpace(L)));
+		class_type* instance = static_cast<class_type*>(GetExtraSpace(L));
 		std::tuple<Args...> values;
 		Invoke_Iterate<0, Args...>(L, values);
 

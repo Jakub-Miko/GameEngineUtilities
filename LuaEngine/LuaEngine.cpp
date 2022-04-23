@@ -36,6 +36,7 @@ LuaEngine::LuaEngine() : m_functions(std::make_unique<std::vector<Lua_Function_B
 {
 	m_LuaState = luaL_newstate();
 	luaL_openlibs(m_LuaState);
+	SetExtraSpace(GetState(), nullptr);
 	DebugPrint("Stack is initialized at: " << lua_gettop(m_LuaState))
 }
 
@@ -262,12 +263,23 @@ bool LuaEngine::Call_impl(LuaEngine* L, int args, int ret)
 //static helper function, for getting pointer to lua_states extra space.
 void* LuaEngine::GetExtraSpace(lua_State* L)
 {
-	return lua_getextraspace(L);
+	lua_pushlightuserdata(L, (void*)L);
+	lua_gettable(L, LUA_REGISTRYINDEX);
+	void* extra = lua_touserdata(L, -1);
+
+	return extra;
+}
+
+void LuaEngine::SetExtraSpace(lua_State* L, void* ptr)
+{
+	lua_pushlightuserdata(L, (void*)L);
+	lua_pushlightuserdata(L, ptr);
+	lua_settable(L, LUA_REGISTRYINDEX);
 }
 
 //static helper function, for getting integer from the stack.
 void LuaEngine::Get(lua_State* L, int index, int* out) {
-	if (lua_isinteger(L, index)) {
+	if (lua_isnumber(L, index)) {
 		*out = lua_tointeger(L, index);
 		return;
 	}
@@ -348,7 +360,7 @@ void LuaEngine::Get(lua_State* L, int index, void** ptr, int id)
 	if (lua_istable(L,index)) {
 		lua_pushstring(L, "type_identifier");
 		lua_gettable(L, index);
-		if (lua_isinteger(L, -1)) {
+		if (lua_isnumber(L, -1)) {
 			if (lua_tointeger(L, -1) == id) {
 				lua_pushstring(L, "ptr");
 				lua_gettable(L, index);
