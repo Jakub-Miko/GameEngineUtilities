@@ -28,7 +28,7 @@ endif()
 execute_process(        
     COMMAND ${CMAKE_COMMAND} -E copy_if_different  
         ${CMAKE_CURRENT_SOURCE_DIR}/lua_jit/src/lua51.dll      
-        ${CMAKE_BINARY_DIR})                 
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})                 
 
 
 endif()
