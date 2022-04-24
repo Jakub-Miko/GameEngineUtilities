@@ -14,17 +14,9 @@ message(${Lua_Jit_library})
 message(${Lua_library_s})
 
 
-if(NOT Lua_Jit_library AND NOT Lua_library_s AND NOT Lua_library_d)
-    execute_process(COMMAND "build.bat" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE Res OUTPUT_VARIABLE OUT_STD)
-    message("Building")
-    message(${Lua_Jit_library})
-    message(${Lua_library_s})
+if(NOT Lua_Jit_library AND NOT Lua_library_s)
 
-    find_library(Lua_Jit_library luajit.lib PATHS ${CMAKE_CURRENT_SOURCE_DIR}/lua_jit/src)
-    find_library(Lua_library_s lua51.lib PATHS ${CMAKE_CURRENT_SOURCE_DIR}/lua_jit/src)
-
-    target_link_libraries(Lua_Jit INTERFACE ${Lua_Jit_library} ${Lua_library_s}  )
-    target_include_directories(Lua_Jit INTERFACE ./lua_jit/src/)
+    message(FATAL_ERROR "Please run build.bat in Visual Studio Command Promt(Windows Search -> \"x64 Native Tools Command Prompt\" OR \"x86 Native Tools Command Prompt\" -> cd \" root directory \" -> \"build.bat\") in the project root directory before running cmake.")
 
 else()
     message(${Lua_Jit_library})
