@@ -1,4 +1,6 @@
 #pragma once
+#include <type_traits>
+#include <string>
 // Valid generator for Ids
 struct SequentialIdGenerator {
 	using id_type = int;
@@ -21,6 +23,27 @@ struct TypeId {
 
 	constexpr operator Type() const {
 		return GetId();
+	}
+
+};
+
+#define RuntimeTag(name) public: inline static constexpr std::string_view type_name = name;
+#define NonIntrusiveRuntimeTag(type, name) template<> struct RuntimeTag<type, void> { static constexpr std::string_view GetName() { return name; } };
+
+template<typename T, typename dummy = void>
+struct RuntimeTag {
+
+	static constexpr std::string_view GetName() {
+		return "Unidentified";
+	}
+
+};
+
+template<typename T>
+struct RuntimeTag<T, std::void_t<decltype(T::type_name)>> {
+
+	static constexpr std::string_view GetName() {
+		return T::type_name;
 	}
 
 };

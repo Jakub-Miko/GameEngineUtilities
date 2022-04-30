@@ -1,5 +1,6 @@
 #include <LuaEngine.h>
 #include <type_traits>
+#include <sstream>
 #include <iostream>
 extern "C" {
 	#include <lua.h>
@@ -112,6 +113,28 @@ void LuaEngine::AddBindings(const std::vector<LuaEngine_Function_Binding>& bindi
 
 }
 
+void LuaEngine::InitFFI()
+{
+	RunString(R"(ffi = require("ffi"))");
+	is_ffi_compatible = true;
+}
+
+void LuaEngine::RegisterModule(const ModuleBindingProperties& props)
+{
+	AddBindings(props.binding_list);
+	
+
+	for (auto& script : props.ffi_declarations) {
+		AddFFIBindings(script);
+	}
+
+	AddFFIAliases(props.ffi_aliases);
+
+	for (auto& script : props.init_scripts) {
+		RunString(script);
+	}
+}
+
 
 void LuaEngine::Create_Table(lua_State* L)
 {
@@ -131,6 +154,39 @@ void LuaEngine::Get_Field(lua_State* L, const std::string& name, int index)
 bool LuaEngine::CheckTable(lua_State* L, int index)
 {
 	return lua_istable(L, index);
+}
+
+void LuaEngine::AddFFIBindings(const std::string& ffi_declarations)
+{
+	if (!is_ffi_compatible) {
+		throw std::runtime_error("The Lua Script VM isn't compatible with ffi, please call InitFFI.");
+	}
+
+	RunString("ffi.cdef[[" + ffi_declarations + "]]");
+
+}
+
+void LuaEngine::AddFFIAliases(const alias_list_t& aliases)
+{
+	if (!is_ffi_compatible) {
+		throw std::runtime_error("The Lua Script VM isn't compatible with ffi, please call InitFFI.");
+	}
+
+	std::stringstream ss;
+
+	for (auto pair : aliases) {
+		if (pair.first.find("struct") != pair.first.npos) {
+			ss << R"(_G[")" << pair.second << R"("])" << R"(= ffi.typeof(")" << pair.first << R"("))" << "\n";
+		}
+		else if(pair.first.find("array") != pair.first.npos) {
+			ss << R"(_G[")" << pair.second << R"("])" << R"(= ffi.typeof(")" << pair.first.substr(6) << R"("))" << "\n";
+		}
+		else {
+			ss << R"(_G[")" << pair.second << R"("])" << "= ffi.C." << pair.first << "\n";
+		}
+	}
+
+	RunString(ss.str());
 }
 
 void LuaEngine::RunString(const std::string& code)

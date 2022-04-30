@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_set>
 #include <string>
 #include <tuple>
 #include <memory>
@@ -34,6 +35,7 @@
 struct lua_State;
 struct luaL_Reg;
 class LuaEngineProxy;
+class ModuleBindingProperties;
 class LuaEngine;
 #pragma region BASE
 
@@ -74,6 +76,8 @@ public:
 	//Internal function binding format, its construction depends on Lua headers.
 	using Lua_Function_Binding = luaL_Reg;
 
+	using alias_list_t = std::vector<std::pair<std::string, std::string>>;
+
 	//External function binding format, used when calling AddBindings and AddBinding without needing Lua headers.
 	struct LuaEngine_Function_Binding {
 		const char* name;
@@ -106,6 +110,17 @@ public:
 	void AddBinding(const LuaEngine_Function_Binding& binding);
 	//Adds multiple function bindings.
 	void AddBindings(const std::vector<LuaEngine_Function_Binding>& bindings);
+
+	//Creates global ffi object used for FFI bindings.
+	void InitFFI();
+
+	void RegisterModule(const ModuleBindingProperties& props);
+
+	//Adds FFI declarations.
+	void AddFFIBindings(const std::string& ffi_declarations);
+
+	//Add FFI aliases
+	void AddFFIAliases(const alias_list_t& aliases);
 
 	void RunString(const std::string& code);
 	//Loads and runs a script from filepath, return true if succeeded false otherwise.
@@ -407,7 +422,7 @@ protected:
 private:
 	//Internal Array of function bindings used mainly for purposes of copying.
 	std::unique_ptr<std::vector<Lua_Function_Binding>> m_functions;
-
+	bool is_ffi_compatible = false;
 	//Internal lua_State
 	lua_State* m_LuaState;
 protected:
@@ -664,5 +679,62 @@ public:
 
 };
 
+class ModuleBindingProperties {
+private:
+	friend LuaEngine;
+	std::unordered_set<std::string> loaded_modules;
+	std::vector<LuaEngine::LuaEngine_Function_Binding> binding_list;
+	std::vector<std::string> init_scripts;
+	std::vector<std::string> ffi_declarations;
+	LuaEngine::alias_list_t ffi_aliases;
+public:
+
+	ModuleBindingProperties(): binding_list(), init_scripts(), ffi_declarations(), ffi_aliases(), loaded_modules(){
+
+	}
+
+	bool TryLoadModule(const std::string& module_name) {
+		if (loaded_modules.find(module_name) == loaded_modules.end()) {
+			loaded_modules.insert(module_name);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	void Add_bindings(const std::initializer_list<LuaEngine::LuaEngine_Function_Binding>& bindings) {
+		binding_list.insert(binding_list.end(), bindings);
+	}
+
+	void Add_init_script(const std::string& script) {
+		init_scripts.push_back(script);
+	}
+
+	void Add_FFI_declarations(const std::string& declarations) {
+		ffi_declarations.push_back(declarations);
+	}
+
+	void Add_FFI_aliases(const std::initializer_list<std::pair<std::string,std::string>>& aliases) {
+		ffi_aliases.insert(ffi_aliases.end(), aliases);
+	}
+
+};
+
+#define LUA_FUNCTION(name, func) LuaEngine::LuaEngine_Function_Binding{name, LuaEngine::Invoke<func>}
+#define SCRIPT_MODULE_NAME(name) virtual std::string GetName() override {return name;}
+
+class ScriptModule {
+protected:
+	virtual void OnRegisterModule(ModuleBindingProperties& props) = 0;
+public:
+	virtual std::string GetName() = 0;
+	void RegisterModule(ModuleBindingProperties& props) {
+		if (props.TryLoadModule(GetName())) {
+			OnRegisterModule(props);
+		}
+	}
+
+};
 
 #pragma endregion
