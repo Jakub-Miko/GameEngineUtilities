@@ -198,6 +198,7 @@ void LuaEngine::RunString(const std::string& code)
 // start index. Used Internally by AddBindinds and Add Binding.
 void LuaEngine::SetBindings(std::vector<Lua_Function_Binding>& bindings, int startindex) {
 	static Lua_Function_Binding termination = { NULL, NULL };
+	if (bindings.empty()) return;
 	if (bindings.empty() || (bindings.size() - 1) < startindex) {
 		DebugPrint("Invalid Binding array");
 		Assert("Break"); 
