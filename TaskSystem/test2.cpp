@@ -2,11 +2,13 @@
 #include <TaskSystem.h>
 #include <Profiler.h>
 #include <TaskSystemFence.h>
+#include <AsyncTaskDispatcher.h>
 #include <tuple>
 #include <thread>
 #include <chrono>
 #include <random>
 #include <array>
+#include "AsyncTaskDispatcher.h"
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
@@ -16,9 +18,8 @@ void SecondTask() {
 	std::this_thread::sleep_for(std::chrono::milliseconds(2));
 }
 
-void TaskTest(int milisecs) {
+void TaskTest(AsyncTaskDispatcher* system, int milisecs) {
 	PROFILE("submission task");
-	TaskSystem* system = TaskSystem::Get();
 	int y = 8;
 	int step = 3;
 	int modulo = 50;
@@ -45,14 +46,16 @@ int main() {
 	{
 		std::srand(521);
 
-		BEGIN_PROFILING("asdasd", "C:/Users/mainm/Desktop/GameEngine/Utility/TaskSystem/Profile_Result.json");
+		BEGIN_PROFILING("asdasd", "C:/Users/mainm/Desktop/GameEngine/PseudoCode/Utilities/TaskSystem/Profile_Result.json");
+		ThreadManager::Init();
+		
+		AsyncTaskDispatcher* system = new AsyncTaskDispatcher;
 		{
 			PROFILE("TaskSystem Start");
-			ThreadManager::Init();
-			TaskSystem::Initialize(TaskSystemProps{ 0 });
-
-			TaskSystem* system = TaskSystem::Get();
 			system->Run();
+
+			TaskSystem::Initialize();
+			TaskSystem::Get()->Run();
 
 			auto task_return = system->CreateTask<int>([](int a) { PROFILE("RETURN"); return 2 * a; }, 5);
 			system->Submit(task_return);
@@ -71,8 +74,8 @@ int main() {
 			{
 				int time;
 				PROFILE("TaskCreation");
-				for (int y = 0; y < 100; y++) {
-					m_funcs.push_back(system->CreateTask([time]() {TaskTest(time); }));
+				for (int y = 0; y < 10; y++) {
+					m_funcs.push_back(system->CreateTask([time,system]() {TaskTest(system, time); }));
 					m_funcs.push_back(system->CreateTask(Sync));
 				}
 			}
@@ -86,9 +89,7 @@ int main() {
 				fence.Signal(1); system->FlushLoop(); 
 			};
 			system->SetIdleTask(system->CreateTask(task));
-			system->JoinTaskSystem([&fence]() -> bool {
-				return fence.IsValue(1); 
-				});
+			
 
 			
 			PROFILE("FLUSH");
@@ -104,10 +105,11 @@ int main() {
 
 			system->Submit(tasks);
 			PROFILE("TaskSystem Submitted");
-
+			fence.Wait(1);
 			std::cin.get();
 			std::cout << "End\n";
 		}
+		delete system;
 		TaskSystem::Shutdown();
 		ThreadManager::Shutdown();
 		END_PROFILING();

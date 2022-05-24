@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10.0)
 project(TaskSystem)
 
 set(CMAKE_CXX_STANDARD 17)
-add_library(TaskSystem "Task.h" "TaskSystem.h" "TaskSystemFence.cpp" "TaskSystem.cpp" "TaskQueue.h" "TaskQueue.cpp"  "Promise.h" "Promise.cpp")
+add_library(TaskSystem "AsyncTaskDispatcher.h" "AsyncTaskDispatcher.cpp" "Task.h" "TaskSystem.h" "TaskSystemFence.cpp" "TaskSystem.cpp" "TaskQueue.h" "TaskQueue.cpp"  "Promise.h" "Promise.cpp")
 
 
 find_package(Threads)
