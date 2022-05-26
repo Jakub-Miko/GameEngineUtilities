@@ -24,7 +24,9 @@ std::shared_ptr<TaskDefinition> SingleThreadedTaskQueue::Pop(uint32_t& sync_var,
 			on_push.notify_one();
 			m_IdleTask.reset();
 		}
+		running = false;
 		on_push.wait(lock, [this, &sync_var, &reference_sync_num]() {return !m_Queue.empty() || sync_var != reference_sync_num; });
+		running = true;
 		if (sync_var != reference_sync_num) {
 			sync_var = reference_sync_num;
 			return nullptr;

@@ -20,7 +20,8 @@ uint32_t TaskSystemFence::GetNumber()
 
 bool TaskSystemFence::IsValue(uint32_t number)
 {
-	return GetNumber() >= number;
+	std::lock_guard<std::mutex> lock(m_Mutex);
+	return counter >= number;
 }
 
 void TaskSystemFence::Wait(uint32_t number)

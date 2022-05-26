@@ -81,6 +81,10 @@ public:
 
 	void FlushLoop();
 
+	bool IsRunning() const {
+		return m_Queue->IsRunning();
+	}
+
 	~AsyncTaskDispatcher();
 
 

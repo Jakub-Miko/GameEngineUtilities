@@ -24,10 +24,12 @@ public:
 
 	Future& operator=(const Future& ref) noexcept {
 		m_future = ref.m_future;
+		return *this;
 	}
 
 	Future& operator=(Future&& ref) noexcept {
 		m_future = std::move(ref.m_future);
+		return *this;
 	}
 
 	~Future() {
@@ -42,8 +44,8 @@ public:
 		m_future.wait();
 	}
 
-	bool valid() {
-		return m_future.valid();
+	bool IsAvailable() {
+		return m_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
 	}
 
 private:
@@ -70,10 +72,12 @@ public:
 
 	Promise& operator=(const Promise& ref) noexcept {
 		m_promise = ref.m_promise;
+		return *this;
 	}
 
 	Promise& operator=(Promise&& ref) noexcept {
 		m_promise = std::move(ref.m_promise);
+		return *this;
 	}
 
 	~Promise() {

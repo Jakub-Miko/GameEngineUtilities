@@ -65,6 +65,7 @@ void TaskQueue::Flush(uint32_t& ref_var)
 {
 	std::unique_lock<std::mutex> lock(m_QueueMutex);
 	ref_var++;
+	ref_var++;
 	lock.unlock();
 	on_push.notify_all();
 }
