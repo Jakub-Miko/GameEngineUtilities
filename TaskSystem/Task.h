@@ -70,10 +70,17 @@ public:
 
 	virtual void Run() override {
 		std::apply(function, data);
+		promise.SetValue();
 	}
+
+	Future<void> GetFuture() {
+		return promise.GetFuture();
+	}
+
 private:
 	T function;
 	std::tuple<Args...> data;
+	Promise<void> promise;
 };
 
 template<typename T>
@@ -87,9 +94,16 @@ public:
 
 	virtual void Run() override {
 		std::invoke(function);
+		promise.SetValue();
 	}
+
+	Future<void> GetFuture() {
+		return promise.GetFuture();
+	}
+
 private:
 	T function;
+	Promise<void> promise;
 };
 
 template<typename R = void,typename T, typename ... Args, typename Allocator = std::allocator<Task<R,T, Args...>>>
