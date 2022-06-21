@@ -69,7 +69,7 @@ std::string FileManager::GetPath(const std::string& path)
 		}
 	}
 	else {
-		return GetRootPath() + path;
+		return GetRootPath() + std::string(path);
 	}
 
 
