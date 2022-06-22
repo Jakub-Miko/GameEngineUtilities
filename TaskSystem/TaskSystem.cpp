@@ -110,7 +110,12 @@ void TaskSystem::ThreadLoop(TaskQueue* queue, std::atomic<bool>* run,Synchronize
 		PROFILE("Load");
 		std::shared_ptr<TaskDefinition> task = queue->Pop(sync_num, sync_ref);
 		if (task) {
-			task->Run();
+			try {
+				task->Run();
+			}
+			catch (...) {
+				task->SetException(std::current_exception());
+			}
 		}
 		pool->FlushDeallocations();
 	}

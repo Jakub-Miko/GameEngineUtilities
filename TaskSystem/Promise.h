@@ -19,7 +19,7 @@ public:
 	}
 
 	Future(Future&& ref) : m_future(std::move(ref.m_future)) {
-
+		
 	}
 
 	Future& operator=(const Future& ref) noexcept {
@@ -67,7 +67,7 @@ public:
 	}
 
 	Promise(Promise&& ref) : m_promise(std::move(ref.m_promise)) {
-
+	
 	}
 
 	Promise& operator=(const Promise& ref) noexcept {
@@ -92,8 +92,8 @@ public:
 		m_promise.set_value(std::forward<T>(value));
 	}
 
-	void SetException(std::exception_ptr&& exception) {
-		m_promise.set_exception(std::forward<std::exception_ptr>(exception));
+	void SetException(std::exception_ptr exception) {
+		m_promise.set_exception(exception);
 	}
 
 
@@ -176,8 +176,9 @@ public:
 		m_promise.set_value();
 	}
 
-	void SetException(std::exception_ptr&& exception) {
-		m_promise.set_exception(std::forward<std::exception_ptr>(exception));
+
+	void SetException(std::exception_ptr exception) {
+		m_promise.set_exception(exception);
 	}
 
 

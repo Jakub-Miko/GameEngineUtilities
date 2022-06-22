@@ -26,6 +26,7 @@ public:
 	std::string GetRenderApiAssetFilePath(const std::string& path);
 	std::string GetAssetFilePath(const std::string& path);
 	std::string GetEngineAssetFilePath(const std::string& path);
+	std::string GetRelativeFilePath(const std::string& absolute_file_path);
 	std::string GetRootPath();
 
 	static std::string GetRelativeBinaryPath(const std::string& path);

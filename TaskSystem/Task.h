@@ -8,6 +8,9 @@
 class TaskDefinition {
 public:
 	virtual void Run() = 0;
+	virtual void SetException(std::exception_ptr except) {
+
+	};
 	virtual ~TaskDefinition() {}
 };
 
@@ -25,6 +28,10 @@ public:
 	virtual void Run() override {
 		promise.SetValue(std::apply(function, data));
 	}
+
+	virtual void SetException(std::exception_ptr except) override {
+		promise.SetException(except);
+	};
 
 	Future<R> GetFuture() {
 		return promise.GetFuture();
@@ -50,6 +57,10 @@ public:
 		promise.SetValue(std::invoke(function));
 	}
 
+	virtual void SetException(std::exception_ptr except) override {
+		promise.SetException(except);
+	};
+
 	Future<R> GetFuture() {
 		return promise.GetFuture();
 	}
@@ -72,6 +83,10 @@ public:
 		std::apply(function, data);
 		promise.SetValue();
 	}
+
+	virtual void SetException(std::exception_ptr except) override {
+		promise.SetException(except);
+	};
 
 	Future<void> GetFuture() {
 		return promise.GetFuture();
@@ -96,6 +111,10 @@ public:
 		std::invoke(function);
 		promise.SetValue();
 	}
+
+	virtual void SetException(std::exception_ptr except) override {
+		promise.SetException(except);
+	};
 
 	Future<void> GetFuture() {
 		return promise.GetFuture();
