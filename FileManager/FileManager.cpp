@@ -2,9 +2,12 @@
 #include "FileManager.h"
 #include "FileManager.h"
 #include "FileManager.h"
+#include "FileManager.h"
+#include "FileManager.h"
 #include <filesystem>
 #include <ConfigManager.h>
-
+#include <fstream>
+#include <sstream>
 
 FileManager* FileManager::instance = nullptr;
 
@@ -110,6 +113,112 @@ std::string FileManager::GetRelativeFilePath(const std::string& absolute_file_pa
 std::string FileManager::GetRootPath()
 {
 	return paths.root_path;
+}
+
+bool FileManager::IsSubPath(const std::string& file_path)
+{
+	return file_path.find('#') != file_path.npos;
+}
+
+std::string FileManager::GetFilePathFromSubPath(const std::string& file_path)
+{
+	auto fnd = file_path.find('#');
+	if (fnd == file_path.npos) {
+		throw std::runtime_error("This file path doesn't contain a file section");
+	}
+	
+	return file_path.substr(0, fnd);
+}
+
+std::string FileManager::GetFileSectionNameFromSubPath(const std::string& file_path)
+{
+	auto fnd = file_path.find('#');
+	if (fnd == file_path.npos) {
+		throw std::runtime_error("This file path doesn't contain a file section");
+	}
+	fnd += 1;
+	auto fnd_end = file_path.find_first_of(" \t\n", fnd);
+	if (fnd == file_path.npos) {
+		throw std::runtime_error("This file path doesn't contain a file section");
+	}
+	return file_path.substr(fnd, fnd_end - fnd);
+
+}
+
+std::string FileManager::GetFileSection(const std::string& file_path, const std::string section_name)
+{
+	std::ifstream file(file_path);
+	if (!file.is_open()) {
+		throw std::runtime_error("File " + file_path + " could not be opened");
+	}
+	std::stringstream str_stream;
+	str_stream << file.rdbuf();
+	file.close();
+	return GetFileSectionFromString(str_stream.str(), section_name);
+}
+
+std::string FileManager::GetFileSectionFromString(const std::string& file_string, const std::string section_name)
+{
+	auto fnd_begin = file_string.find("@Section:" + section_name);
+	if (fnd_begin == file_string.npos) {
+		throw std::runtime_error("Section " + section_name + " not found");
+	} 
+
+	fnd_begin += std::string("@Section:" + section_name).size();
+
+	auto fnd_end = file_string.find("@EndSection", fnd_begin);
+	if (fnd_end == file_string.npos) {
+		throw std::runtime_error("Section " + section_name + " not found");
+	}
+	fnd_begin = file_string.find_first_not_of(" \n\t", fnd_begin);
+
+	return file_string.substr(fnd_begin, fnd_end - fnd_begin);
+
+}
+
+std::string FileManager::OpenFile(const std::string& file_path)
+{
+	bool is_subpath = IsSubPath(file_path);
+	
+	std::ifstream file(is_subpath ? GetFilePathFromSubPath(file_path) : file_path);
+	if (!file.is_open()) {
+		throw std::runtime_error("File " + file_path + " could not be opened");
+	}
+	std::stringstream str_stream;
+	str_stream << file.rdbuf();
+	file.close();
+	auto str = str_stream.str();
+	if (str.find("@Section") != str.npos) {
+		if (is_subpath) {
+			return GetFileSectionFromString(str, GetFileSectionNameFromSubPath(file_path));
+		}
+		else {
+			return GetFileSectionFromString(str, "Root");
+		}
+	}
+	else {
+		if (is_subpath) {
+			throw std::runtime_error("This file isn't partitioned into Sections.");
+		}
+		else {
+			return str;
+		}
+	}
+}
+
+std::string FileManager::OpenFileRaw(const std::string& file_path)
+{
+	bool is_subpath = IsSubPath(file_path);
+
+	std::ifstream file(is_subpath ? GetFilePathFromSubPath(file_path) : file_path);
+	if (!file.is_open()) {
+		throw std::runtime_error("File " + file_path + " could not be opened");
+	}
+	std::stringstream str_stream;
+	str_stream << file.rdbuf();
+	file.close();
+	auto str = str_stream.str();
+	return str;
 }
 
 std::string FileManager::GetRelativeBinaryPath(const std::string& path)

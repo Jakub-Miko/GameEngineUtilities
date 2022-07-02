@@ -29,6 +29,15 @@ public:
 	std::string GetRelativeFilePath(const std::string& absolute_file_path);
 	std::string GetRootPath();
 
+	bool IsSubPath(const std::string& file_path);
+	std::string GetFilePathFromSubPath(const std::string& file_path);
+	std::string GetFileSectionNameFromSubPath(const std::string& file_path);
+	std::string GetFileSection(const std::string& file_path, const std::string section_name);
+	std::string GetFileSectionFromString(const std::string& file_string, const std::string section_name);
+	std::string OpenFile(const std::string& file_path);
+	std::string OpenFileRaw(const std::string& file_path);
+
+
 	static std::string GetRelativeBinaryPath(const std::string& path);
 
 private:

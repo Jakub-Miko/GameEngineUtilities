@@ -64,7 +64,7 @@ std::string LuaEngineUtilities::ParseScript(std::string script_in, const std::st
 
 std::string LuaEngineUtilities::LoadScript(const std::string& path, bool construction)
 {
-    std::ifstream file_in(FileManager::Get()->GetAssetFilePath(path));
+    std::ifstream file_in(path);
     if (file_in.is_open()) {
         std::stringstream stream;
         stream << file_in.rdbuf();
@@ -80,8 +80,11 @@ std::string LuaEngineUtilities::LoadScript(const std::string& path, bool constru
 
 std::string LuaEngineUtilities::ScriptHash(std::string script_path, bool construction)
 {
-    std::replace(script_path.begin(), script_path.end(), '/', '_');
-    auto first = script_path.find_first_of('.', 0);
+    std::string path = FileManager::Get()->GetRelativeFilePath(std::filesystem::absolute(std::filesystem::path(script_path)).generic_string());
+    std::replace(path.begin(), path.end(), '/', '_');
+    std::replace(path.begin(), path.end(), '.', '_');
+    std::replace(path.begin(), path.end(), '#', '_');
 
-    return (construction ? "Construction_" : "Object_") + script_path.substr(0, first);
+    return (construction ? "Construction_" : "Object_") + path;
 }
+ 
