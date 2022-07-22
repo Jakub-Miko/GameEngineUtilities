@@ -208,11 +208,12 @@ std::string FileManager::OpenFile(const std::string& file_path)
 
 std::string FileManager::OpenFileRaw(const std::string& file_path)
 {
-	bool is_subpath = IsSubPath(file_path);
+	std::string path = GetPath(file_path);
+	bool is_subpath = IsSubPath(path);
 
-	std::ifstream file(is_subpath ? GetFilePathFromSubPath(file_path) : file_path);
+	std::ifstream file(is_subpath ? GetFilePathFromSubPath(path) : path);
 	if (!file.is_open()) {
-		throw std::runtime_error("File " + file_path + " could not be opened");
+		throw std::runtime_error("File " + path + " could not be opened");
 	}
 	std::stringstream str_stream;
 	str_stream << file.rdbuf();
