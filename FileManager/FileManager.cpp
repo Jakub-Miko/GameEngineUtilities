@@ -124,7 +124,7 @@ std::string FileManager::GetFilePathFromSubPath(const std::string& file_path)
 {
 	auto fnd = file_path.find('#');
 	if (fnd == file_path.npos) {
-		throw std::runtime_error("This file path doesn't contain a file section");
+		return file_path;
 	}
 	
 	return file_path.substr(0, fnd);
