@@ -30,11 +30,18 @@ struct TypeId {
 #define RuntimeTag(name) public: inline static constexpr std::string_view type_name = name;
 #define NonIntrusiveRuntimeTag(type, name) template<> struct RuntimeTag<type, void> { static constexpr std::string_view GetName() { return name; } };
 
+using RuntimeTagIdType = SequentialIdGenerator::id_type;
+
 template<typename T, typename dummy = void>
 struct RuntimeTag {
 
+
 	static constexpr std::string_view GetName() {
 		return "Unidentified";
+	}
+
+	inline static const RuntimeTagIdType GetId() {
+		return -1;
 	}
 
 };
@@ -44,6 +51,11 @@ struct RuntimeTag<T, std::void_t<decltype(T::type_name)>> {
 
 	static constexpr std::string_view GetName() {
 		return T::type_name;
+	}
+
+	inline static const RuntimeTagIdType GetId() {
+		static const RuntimeTagIdType id = SequentialIdGenerator::Id();
+		return id;
 	}
 
 };
