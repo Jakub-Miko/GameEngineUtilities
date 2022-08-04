@@ -222,6 +222,11 @@ std::string FileManager::OpenFileRaw(const std::string& file_path)
 	return str;
 }
 
+std::string FileManager::ResolvePath(const std::string& file_path)
+{
+	return std::filesystem::absolute(std::filesystem::path(file_path)).generic_string();
+}
+
 std::string FileManager::GetRelativeBinaryPath(const std::string& path)
 {
 	return std::filesystem::current_path().generic_string() + path;

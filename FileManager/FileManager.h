@@ -36,7 +36,7 @@ public:
 	std::string GetFileSectionFromString(const std::string& file_string, const std::string section_name);
 	std::string OpenFile(const std::string& file_path);
 	std::string OpenFileRaw(const std::string& file_path);
-
+	std::string ResolvePath(const std::string& file_path);
 
 	static std::string GetRelativeBinaryPath(const std::string& path);
 
