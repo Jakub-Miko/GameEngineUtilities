@@ -81,6 +81,10 @@ public:
 
 	void FlushLoop();
 
+	void RegisterUserThread(std::thread::id thread) {
+		m_Pool->InitializePools(thread);
+	}
+
 	bool IsRunning() const {
 		return m_Queue->IsRunning();
 	}
