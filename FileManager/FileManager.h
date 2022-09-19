@@ -6,6 +6,7 @@ struct FileManager_paths {
 	std::string local_asset_path = "Unknown";
 	std::string engine_asset_path = "Unknown";
 	std::string render_api_path = "Unknown";
+	std::string temp_path = "Unknown";
 };
 
 class FileManager {
@@ -25,6 +26,7 @@ public:
 	std::string GetRelativeFilepath(const std::string& path);
 	std::string GetRenderApiAssetFilePath(const std::string& path);
 	std::string GetAssetFilePath(const std::string& path);
+	std::string GetTempFilePath(const std::string& path);
 	std::string GetEngineAssetFilePath(const std::string& path);
 	std::string GetRelativeFilePath(const std::string& absolute_file_path);
 	std::string GetRootPath();
@@ -33,6 +35,7 @@ public:
 	std::string GetFilePathFromSubPath(const std::string& file_path);
 	std::string GetFileSectionNameFromSubPath(const std::string& file_path);
 	std::string GetFileSection(const std::string& file_path, const std::string section_name);
+	void InsertOrReplaceSection(std::string& file_string, const std::string& new_section_string, const std::string& section_name);
 	std::string GetFileSectionFromString(const std::string& file_string, const std::string section_name);
 	std::string OpenFile(const std::string& file_path);
 	std::string OpenFileRaw(const std::string& file_path);

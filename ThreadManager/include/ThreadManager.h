@@ -148,6 +148,11 @@ public:
 		return m_FreeThreads.size();
 	}
 
+	//This Method is not Thread save, use it only if all threads are inactive;
+	const std::vector<ThreadObject*>& GetAllThreadObjects() const {
+		return m_Threads;
+	}
+
 private:
 
 

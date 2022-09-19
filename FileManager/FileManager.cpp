@@ -30,6 +30,7 @@ void FileManager::Init()
 	paths.local_asset_path = paths.root_path + ConfigManager::Get()->GetString("local_asset_path");
 	paths.engine_asset_path = paths.root_path + ConfigManager::Get()->GetString("engine_asset_path");
 	paths.render_api_path = paths.root_path + ConfigManager::Get()->GetString("render_api_path");
+	paths.temp_path = paths.root_path + ConfigManager::Get()->GetString("temp_path");
 
 	if (!instance) {
 		instance = new FileManager(paths);
@@ -70,7 +71,9 @@ std::string FileManager::GetPath(const std::string& path)
 		}
 		else if (directive == "absolute") {
 			return std::filesystem::absolute(std::filesystem::path(file_path)).generic_string();
-
+		}
+		else if (directive == "temp") {
+			return std::filesystem::absolute(std::filesystem::path(GetTempFilePath(file_path))).generic_string();
 		}
 		else {
 			throw std::runtime_error("Unknown directive " + directive);
@@ -97,6 +100,11 @@ std::string FileManager::GetRenderApiAssetFilePath(const std::string& path)
 std::string FileManager::GetAssetFilePath(const std::string& path)
 {
 	return paths.local_asset_path + path;
+}
+
+std::string FileManager::GetTempFilePath(const std::string& path)
+{
+	return paths.temp_path + path;
 }
 
 std::string FileManager::GetEngineAssetFilePath(const std::string& path)
@@ -157,6 +165,27 @@ std::string FileManager::GetFileSection(const std::string& file_path, const std:
 	return GetFileSectionFromString(str_stream.str(), section_name);
 }
 
+void FileManager::InsertOrReplaceSection(std::string& file_string, const std::string& new_section_string, const std::string& section_name)
+{
+	auto fnd_begin = file_string.find("@Section:" + section_name);
+	if (fnd_begin != file_string.npos) {
+			
+
+		fnd_begin += std::string("@Section:" + section_name).size();
+
+		auto fnd_end = file_string.find("@EndSection", fnd_begin);
+		if (fnd_end == file_string.npos) {
+			throw std::runtime_error("Section " + section_name + " not found");
+		}
+		
+
+		file_string.replace(fnd_begin, fnd_end - fnd_begin, new_section_string + "\n");
+	}
+	else {
+		file_string.append("@Section:" + section_name + "\n" + new_section_string + "\n@EndSection");
+	}
+}
+
 std::string FileManager::GetFileSectionFromString(const std::string& file_string, const std::string section_name)
 {
 	auto fnd_begin = file_string.find("@Section:" + section_name);
@@ -176,8 +205,9 @@ std::string FileManager::GetFileSectionFromString(const std::string& file_string
 
 }
 
-std::string FileManager::OpenFile(const std::string& file_path)
+std::string FileManager::OpenFile(const std::string& path)
 {
+	std::string file_path = GetPath(path);
 	bool is_subpath = IsSubPath(file_path);
 	
 	std::ifstream file(is_subpath ? GetFilePathFromSubPath(file_path) : file_path);
