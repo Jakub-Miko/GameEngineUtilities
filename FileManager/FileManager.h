@@ -41,6 +41,8 @@ public:
 	std::string OpenFileRaw(const std::string& file_path);
 	std::string ResolvePath(const std::string& file_path);
 
+	std::string GetPathHash(const std::string& file_path);
+
 	static std::string GetRelativeBinaryPath(const std::string& path);
 
 private:

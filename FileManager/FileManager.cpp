@@ -257,6 +257,16 @@ std::string FileManager::ResolvePath(const std::string& file_path)
 	return std::filesystem::absolute(std::filesystem::path(file_path)).generic_string();
 }
 
+std::string FileManager::GetPathHash(const std::string& file_path)
+{
+	std::string path = GetRelativeFilePath(GetPath(file_path));
+	std::replace(path.begin(), path.end(), '/', '_');
+	std::replace(path.begin(), path.end(), '.', '_');
+	std::replace(path.begin(), path.end(), '#', '_');
+	return path;
+
+}
+
 std::string FileManager::GetRelativeBinaryPath(const std::string& path)
 {
 	return std::filesystem::current_path().generic_string() + path;
