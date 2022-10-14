@@ -31,6 +31,9 @@ void FileManager::Init()
 	paths.engine_asset_path = paths.root_path + ConfigManager::Get()->GetString("engine_asset_path");
 	paths.render_api_path = paths.root_path + ConfigManager::Get()->GetString("render_api_path");
 	paths.temp_path = paths.root_path + ConfigManager::Get()->GetString("temp_path");
+	if (!std::filesystem::exists(paths.temp_path)) {
+		std::filesystem::create_directory(paths.temp_path);
+	}
 
 	if (!instance) {
 		instance = new FileManager(paths);
