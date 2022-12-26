@@ -44,6 +44,10 @@ public:
 		m_future.wait();
 	}
 
+	bool IsValid() const {
+		return m_future.valid();
+	}
+
 	bool IsAvailable() {
 		return m_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
 	}
@@ -136,6 +140,11 @@ public:
 	void Wait() {
 		m_future.wait();
 	}
+
+	bool IsValid() const {
+		return m_future.valid();
+	}
+
 
 	bool IsAvailable() {
 		return m_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
