@@ -177,7 +177,7 @@ void FileManager::InsertOrReplaceSection(std::string& file_string, const std::st
 		}
 		
 
-		file_string.replace(fnd_begin, fnd_end - fnd_begin, new_section_string + "\n");
+		file_string.replace(fnd_begin, fnd_end - fnd_begin, "\n" + new_section_string + "\n");
 	}
 	else {
 		file_string.append("@Section:" + section_name + "\n" + new_section_string + "\n@EndSection");
@@ -234,7 +234,7 @@ std::string FileManager::OpenFile(const std::string& path)
 	}
 }
 
-std::string FileManager::OpenFileRaw(const std::string& file_path)
+std::string FileManager::OpenFileRaw(const std::string& file_path, SectionList* avaliable_sections)
 {
 	std::string path = GetPath(file_path);
 	bool is_subpath = IsSubPath(path);
@@ -247,6 +247,18 @@ std::string FileManager::OpenFileRaw(const std::string& file_path)
 	str_stream << file.rdbuf();
 	file.close();
 	auto str = str_stream.str();
+	if (avaliable_sections) {
+		size_t position = 0;
+		position = str.find("@Section:", position);
+		while (position != str.npos) {
+			size_t end_word = 0;
+			position += strlen("@Section:");
+			end_word = str.find_first_of(" \t\n@", position);
+			avaliable_sections->insert(str.substr(position, end_word - position));
+			position = end_word;
+			position = str.find("@Section:", position);
+		}
+	}
 	return str;
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <set>
 
 struct FileManager_paths {
 	std::string root_path = "Unknown";
@@ -8,6 +9,8 @@ struct FileManager_paths {
 	std::string render_api_path = "Unknown";
 	std::string temp_path = "Unknown";
 };
+
+using SectionList = typename std::template set<std::string>;
 
 class FileManager {
 public:
@@ -38,10 +41,10 @@ public:
 	void InsertOrReplaceSection(std::string& file_string, const std::string& new_section_string, const std::string& section_name);
 	std::string GetFileSectionFromString(const std::string& file_string, const std::string section_name);
 	std::string OpenFile(const std::string& file_path);
-	std::string OpenFileRaw(const std::string& file_path);
+	std::string OpenFileRaw(const std::string& file_path, SectionList* avaliable_sections = nullptr);
 	std::string ResolvePath(const std::string& file_path);
-
 	std::string GetPathHash(const std::string& file_path);
+
 
 	static std::string GetRelativeBinaryPath(const std::string& path);
 
