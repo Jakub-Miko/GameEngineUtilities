@@ -3,6 +3,7 @@
 #include <ConfigManager.h>
 #include <fstream>
 #include <sstream>
+#include <Profiler.h>
 
 FileManager* FileManager::instance = nullptr;
 
@@ -113,7 +114,10 @@ std::string FileManager::GetEngineAssetFilePath(const std::string& path)
 std::string FileManager::GetRelativeFilePath(const std::string& absolute_file_path)
 {
 	using namespace std::filesystem;
-	return relative(path(absolute_file_path), path(""_path)).generic_string();
+	std::string rel_root = path(""_path).generic_string();
+	std::string abs = path(absolute_file_path).generic_string();
+
+	return abs.replace(abs.find(rel_root), rel_root.length(), "/");;
 }
 
 std::string FileManager::GetRootPath()
