@@ -3,7 +3,6 @@
 #include <ConfigManager.h>
 #include <fstream>
 #include <sstream>
-#include <Profiler.h>
 
 FileManager* FileManager::instance = nullptr;
 
