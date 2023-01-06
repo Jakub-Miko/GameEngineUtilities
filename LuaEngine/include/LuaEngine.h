@@ -116,6 +116,8 @@ public:
 
 	void RegisterModule(const ModuleBindingProperties& props);
 
+	void RunGarbageCollector();
+
 	//Adds FFI declarations.
 	void AddFFIBindings(const std::string& ffi_declarations);
 

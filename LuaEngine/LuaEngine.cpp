@@ -4,6 +4,7 @@
 #include <iostream>
 extern "C" {
 	#include <lua.h>
+	#include <luajit.h>
 	#include <lauxlib.h>
 	#include <lualib.h>
 }
@@ -37,6 +38,7 @@ LuaEngine::LuaEngine() : m_functions(std::make_unique<std::vector<Lua_Function_B
 {
 	m_LuaState = luaL_newstate();
 	luaL_openlibs(m_LuaState);
+	luaJIT_setmode(m_LuaState, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 	SetExtraSpace(GetState(), nullptr);
 	DebugPrint("Stack is initialized at: " << lua_gettop(m_LuaState))
 }
@@ -47,6 +49,7 @@ LuaEngine::LuaEngine(const LuaEngine& ref) : m_ContextName(ref.m_ContextName)
 {
 	m_LuaState = luaL_newstate();
 	luaL_openlibs(m_LuaState);
+	luaJIT_setmode(m_LuaState, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 	DebugPrint("Stack is initialized at: " << lua_gettop(m_LuaState))
 	m_functions = std::make_unique<std::vector<Lua_Function_Binding>>(*ref.m_functions);
 	SetBindings(*m_functions);
@@ -61,6 +64,7 @@ LuaEngine& LuaEngine::operator=(const LuaEngine& ref)
 	m_functions = std::make_unique<std::vector<Lua_Function_Binding>>(*ref.m_functions);
 	m_LuaState = luaL_newstate();
 	luaL_openlibs(m_LuaState);
+	luaJIT_setmode(m_LuaState, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 	DebugPrint("Stack is initialized at: " << lua_gettop(m_LuaState))
 	SetBindings(*m_functions);
 	return *this;
@@ -133,6 +137,11 @@ void LuaEngine::RegisterModule(const ModuleBindingProperties& props)
 	for (auto& script : props.init_scripts) {
 		RunString(script);
 	}
+}
+
+void LuaEngine::RunGarbageCollector()
+{
+	lua_gc(m_LuaState, LUA_GCCOLLECT, 0);
 }
 
 
