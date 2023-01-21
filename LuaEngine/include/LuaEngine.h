@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_set>
+#include <variant>
 #include <string>
 #include <tuple>
 #include <memory>
@@ -161,6 +162,41 @@ public:
 		throw std::invalid_argument(std::string("Function ") + function_name + " doesn't exist.");
 	}
 
+	//template function for easy lua function calls from c++, pushes the function onto the stack, pushes arguments, 
+	// calls functions, and pops and returns the return value if any. 
+	//In the case of a failure while calling return default value and asserts.
+	//This can be called with unknown values within a variant at runtime
+	template<typename R = void, typename ... Args>
+	R CallRuntime(const char* function_name, const std::vector<std::variant<Args...>>& args) {
+		if (LoadCall(this, function_name)) {
+
+			SetRuntime(m_LuaState, args);
+
+			if (Call_impl(this, args.size())) {
+
+				if constexpr (!std::is_void_v<R>) {
+
+					R ret_value;
+					Get(m_LuaState, -1, &ret_value);
+					clear_stack(m_LuaState, 1);
+					return ret_value;
+
+				}
+				else {
+
+					clear_stack(m_LuaState, 1);
+					return;
+
+				}
+			}
+			clear_stack(m_LuaState, 1);
+			Assert("Break");
+			throw std::runtime_error(std::string("Function ") + function_name + " failed.");
+		}
+		Assert("Break");
+		throw std::invalid_argument(std::string("Function ") + function_name + " doesn't exist.");
+	}
+
 	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
 	// calls functions, and pops and returns the return value if any. 
 	//In the case of a failure while calling return default value and asserts.
@@ -192,6 +228,42 @@ public:
 			throw std::runtime_error(std::string("Function ") + function_name + " failed.");
 		}
 		clear_stack(m_LuaState,1);
+		Assert("Break");
+		throw std::invalid_argument(std::string("Function ") + function_name + " doesn't exist.");
+	}
+
+	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
+	// calls functions, and pops and returns the return value if any. 
+	//In the case of a failure while calling return default value and asserts.
+	//This can be called with unknown values within a variant at runtime
+	template<typename R = void, typename ... Args>
+	R CallObjectRuntime(const char* table_name, const char* function_name, const std::vector<std::variant<Args...>>& args) {
+		if (LoadCall(this, table_name, function_name)) {
+
+			SetRuntime(m_LuaState, args);
+
+			if (Call_impl(this, args.size() + 1)) {
+
+				if constexpr (!std::is_void_v<R>) {
+
+					R ret_value;
+					Get(m_LuaState, -1, &ret_value);
+					clear_stack(m_LuaState, 2);
+					return ret_value;
+
+				}
+				else {
+
+					clear_stack(m_LuaState, 2);
+					return;
+
+				}
+			}
+			clear_stack(m_LuaState, 2);
+			Assert("Break");
+			throw std::runtime_error(std::string("Function ") + function_name + " failed.");
+		}
+		clear_stack(m_LuaState, 1);
 		Assert("Break");
 		throw std::invalid_argument(std::string("Function ") + function_name + " doesn't exist.");
 	}
@@ -230,6 +302,40 @@ public:
 		return false;
 	}
 
+	//template function for easy lua function calls from c++, pushes the function onto the stack, pushes arguments, 
+	// calls functions, and pops and returns the return value if any. 
+	//In the case of a failure while calling return default value and asserts.
+	//This can be called with unknown values within a variant at runtime
+	template<typename R = void, typename ... Args>
+	bool TryCallRuntime(R* out, const char* function_name, const std::vector<std::variant<Args...>>& args) {
+		if (LoadCall(this, function_name)) {
+
+			SetRuntime(m_LuaState, args);
+
+			if (Call_impl(this, args.size())) {
+
+				if constexpr (!std::is_void_v<R>) {
+
+					R ret_value;
+					Get(m_LuaState, -1, &ret_value);
+					clear_stack(m_LuaState, 1);
+					*out = ret_value;
+					return true;
+
+				}
+				else {
+
+					clear_stack(m_LuaState, 1);
+					return true;
+
+				}
+			}
+			clear_stack(m_LuaState, 1);
+			return false;
+		}
+		return false;
+	}
+
 	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
 	// calls functions, and pops and returns the return value if any. 
 	//In the case of a failure while calling return default value and asserts.
@@ -239,6 +345,41 @@ public:
 
 			(Set(m_LuaState, args), ...);
 			if (Call_impl(this, sizeof...(args) + 1)) {
+
+				if constexpr (!std::is_void_v<R>) {
+
+					R ret_value;
+					Get(m_LuaState, -1, &ret_value);
+					clear_stack(m_LuaState, 2);
+					*out = ret_value;
+					return true;
+
+				}
+				else {
+
+					clear_stack(m_LuaState, 2);
+					return true;
+
+				}
+			}
+			clear_stack(m_LuaState, 2);
+			return false;
+		}
+		clear_stack(m_LuaState, 1);
+		return false;
+	}
+
+	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
+	// calls functions, and pops and returns the return value if any. 
+	//In the case of a failure while calling return default value and asserts.
+	//This can be called with unknown values within a variant at runtime
+	template<typename R = void, typename ... Args>
+	bool TryCallObjectRuntime(R* out, const char* table_name, const char* function_name, const std::vector<std::variant<Args...>>& args) {
+		if (LoadCall(this, table_name, function_name)) {
+
+			SetRuntime(m_LuaState, args);
+
+			if (Call_impl(this, args.size() + 1)) {
 
 				if constexpr (!std::is_void_v<R>) {
 
@@ -363,6 +504,36 @@ protected:
 		} else {
 			throw std::runtime_error("Parameter is not a table.");
 		}
+	}
+	template<typename T, typename ... Args_in, typename U>
+	bool SetRuntime_impl(lua_State* L, U argument) {
+		if (std::holds_alternative<T>(argument)) {
+			Set(L, std::get<T>(argument));
+			return true;
+		}
+		if constexpr (sizeof...(Args_in) <= 0) {
+			return false;
+		}
+		else {
+			return SetRuntime_impl<Args_in...>(L,argument);
+		};
+	}
+
+	template<typename ... Args>
+	int SetRuntime(lua_State* L, const std::vector<std::variant<Args...>>& arguments) {
+		int processed = 0;
+		for (auto arg : arguments) {
+			if (SetRuntime_impl< Args...>(L, arg)) {
+				processed++;
+			}
+			else {
+				if (processed != 0) {
+					clear_stack(L, processed);
+				}
+				throw std::runtime_error("Intput Runtime Script Argument could not be processed");
+			}
+		}
+		return processed;
 	}
 
 
