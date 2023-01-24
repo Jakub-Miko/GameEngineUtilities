@@ -48,7 +48,19 @@ public:
 	void SetTableItem(const T& value, const std::string& name);
 
 	template<typename T>
+	void SetTableItem(const T& value, int num);
+
+	template<typename Func>
+	auto SetTable(Func function, const std::string& name) -> decltype((void(),function(std::declval<LuaEngineProxy>())));
+
+	template<typename Func>
+	auto GetTable(Func function, const std::string& name) -> decltype((void(), function(std::declval<LuaEngineProxy>())));
+
+	template<typename T>
 	T GetTableField(const std::string& name, int index = -1);
+	
+	template<typename T>
+	T GetTableField(int i, int index = -1);
 
 private:
 	LuaEngineProxy(lua_State* state);
@@ -442,9 +454,15 @@ protected:
 
 	static void Create_Table(lua_State* L);
 
+	static void Get_Table(lua_State* L, const std::string& name, int index = -1);
+
 	static void Set_Field(lua_State* L, const std::string& name, int index = -1);
 
+	static void Set_Field_i(lua_State* L, int i, int index = -1);
+
 	static void Get_Field(lua_State* L, const std::string& name, int index = -1);
+
+	static void Get_Field_i(lua_State* L, int i, int index = -1);
 
 	static bool CheckTable(lua_State* L, int index);
 	//static helper function for clearing lua stack, calls lua_pop internally.
@@ -614,8 +632,37 @@ void LuaEngineProxy::SetTableItem(const T& value, const std::string& name) {
 }
 
 template<typename T>
+void LuaEngineProxy::SetTableItem(const T& value, int num) {
+	LuaEngine::Set(state, value);
+	LuaEngine::Set_Field_i(state, num, -2);
+}
+
+template<typename Func>
+auto LuaEngineProxy::SetTable(Func function, const std::string& name) -> decltype((void(), function(std::declval<LuaEngineProxy>()))) {
+	LuaEngine::Create_Table(state);
+	function(*this);
+	LuaEngine::Set_Field(state, name,-2);
+}
+
+template<typename Func>
+auto LuaEngineProxy::GetTable(Func function, const std::string& name) -> decltype((void(), function(std::declval<LuaEngineProxy>()))) {
+	LuaEngine::Get_Table(state,name);
+	function(*this);
+	LuaEngine::clear_stack(state, 1);
+}
+
+template<typename T>
 T LuaEngineProxy::GetTableField(const std::string& name, int index) {
 	LuaEngine::Get_Field(state, name, index);
+	T value;
+	LuaEngine::Get(state, -1, &value);
+	LuaEngine::clear_stack(state, 1);
+	return value;
+}
+
+template<typename T>
+T LuaEngineProxy::GetTableField(int i, int index) {
+	LuaEngine::Get_Field_i(state, i, index);
 	T value;
 	LuaEngine::Get(state, -1, &value);
 	LuaEngine::clear_stack(state, 1);

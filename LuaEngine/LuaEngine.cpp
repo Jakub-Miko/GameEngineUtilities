@@ -1,4 +1,5 @@
 #include "include\LuaEngine.h"
+#include "include\LuaEngine.h"
 #include <LuaEngine.h>
 #include <type_traits>
 #include <sstream>
@@ -151,14 +152,34 @@ void LuaEngine::Create_Table(lua_State* L)
 	lua_newtable(L);
 }
 
+void LuaEngine::Get_Table(lua_State* L, const std::string& name, int index)
+{
+	lua_getfield(L, index, name.c_str());
+	if (CheckTable(L, -1)) {
+		return;
+	}
+	else {
+		throw std::runtime_error(name + " is not a table.");
+	}
+}
+
 void LuaEngine::Set_Field(lua_State* L, const std::string& name, int index)
 {
 	lua_setfield(L, index, name.c_str());
+}
+void LuaEngine::Set_Field_i(lua_State* L, int i, int index)
+{
+	lua_rawseti(L, index, i + 1);
 }
 
 void LuaEngine::Get_Field(lua_State* L, const std::string& name, int index)
 {
 	lua_getfield(L, index, name.c_str());
+}
+
+void LuaEngine::Get_Field_i(lua_State* L, int i, int index)
+{
+	lua_rawgeti(L, index, i);;
 }
 
 bool LuaEngine::CheckTable(lua_State* L, int index)
