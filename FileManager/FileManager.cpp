@@ -2,6 +2,8 @@
 #include <filesystem>
 #include <ConfigManager.h>
 #include <fstream>
+#include <algorithm>
+#include <cstring>
 #include <sstream>
 
 FileManager* FileManager::instance = nullptr;
