@@ -16,6 +16,7 @@ public:
 	std::string GetString(const std::string& name);
 	int GetInt(const std::string& name);
 	double GetFloat(const std::string& name);
+	bool Exists(const std::string& name);
 
 private:
 	std::fstream config_file;

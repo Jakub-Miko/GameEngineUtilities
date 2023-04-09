@@ -1,4 +1,5 @@
 #include "ConfigManager.h"
+#include "ConfigManager.h"
 #include <json.hpp>
 #include <sstream>
 #include "include/ConfigManager.h"
@@ -82,5 +83,18 @@ double ConfigManager::GetFloat(const std::string& name)
 	}
 	else {
 		throw std::runtime_error("config property isn't a float or doesn't exist");
+	}
+}
+
+bool ConfigManager::Exists(const std::string& name)
+{
+	std::stringstream stream(config_string);
+	nlohmann::json json;
+	stream >> json;
+	if (json.contains(name)) {
+		return true;
+	}
+	else {
+		return false;
 	}
 }
