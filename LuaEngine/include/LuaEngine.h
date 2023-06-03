@@ -125,7 +125,8 @@ public:
 	void AddBindings(const std::vector<LuaEngine_Function_Binding>& bindings);
 
 	//Creates global ffi object used for FFI bindings.
-	void InitFFI();
+	//additional_dlls: first string is the lua namespace name, second is the file path.
+	void InitFFI(const std::vector<std::pair<std::string, std::string>>& additional_dlls);
 
 	void RegisterModule(const ModuleBindingProperties& props);
 

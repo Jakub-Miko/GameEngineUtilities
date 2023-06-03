@@ -282,6 +282,17 @@ std::string FileManager::GetPathHash(const std::string& file_path)
 
 }
 
+std::string FileManager::GetLibraryPath(const std::string& library_name)
+{
+#ifdef UNIX
+	return GetRelativeBinaryPath("/") + "lib" + library_name + ".so";
+#elif defined(WIN32)
+	return GetRelativeBinaryPath("/") + library_name + ".dll";
+#else 
+	static_assert(false, "Only Linux And Windows is currently supported");
+#endif
+}
+
 std::string FileManager::GetRelativeBinaryPath(const std::string& path)
 {
 	return std::filesystem::current_path().generic_string() + path;

@@ -117,10 +117,13 @@ void LuaEngine::AddBindings(const std::vector<LuaEngine_Function_Binding>& bindi
 
 }
 
-void LuaEngine::InitFFI()
+void LuaEngine::InitFFI(const std::vector<std::pair<std::string, std::string>>& additional_dlls)
 {
 	RunString(R"(ffi = require("ffi"))");
 	is_ffi_compatible = true;
+	for (auto& dll : additional_dlls) {
+		luaL_dostring(m_LuaState, (dll.first + " = ffi.load(\"" + dll.second + "\")").c_str());
+	}
 }
 
 void LuaEngine::RegisterModule(const ModuleBindingProperties& props)
@@ -211,7 +214,7 @@ void LuaEngine::AddFFIAliases(const alias_list_t& aliases)
 			ss << R"(_G[")" << pair.second << R"("])" << R"(= ffi.typeof(")" << pair.first.substr(6) << R"("))" << "\n";
 		}
 		else {
-			ss << R"(_G[")" << pair.second << R"("])" << "= ffi.C." << pair.first << "\n";
+			ss << R"(_G[")" << pair.second << R"("])" << "= Engine." << pair.first << "\n";
 		}
 	}
 

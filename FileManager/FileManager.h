@@ -44,7 +44,7 @@ public:
 	std::string OpenFileRaw(const std::string& file_path, SectionList* avaliable_sections = nullptr);
 	std::string ResolvePath(const std::string& file_path);
 	std::string GetPathHash(const std::string& file_path);
-
+	std::string GetLibraryPath(const std::string& library_name);
 
 	static std::string GetRelativeBinaryPath(const std::string& path);
 
