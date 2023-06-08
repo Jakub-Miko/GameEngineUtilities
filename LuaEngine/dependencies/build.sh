@@ -1,4 +1,4 @@
 #!/bin/bash
 cd lua_jit
-make
+make CFLAGS='-fPIC'
 sudo make install
