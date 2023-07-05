@@ -48,6 +48,10 @@ struct RuntimeTag {
 		return -1;
 	}
 
+	static constexpr bool IsIdAssigned() {
+		return false;
+	}
+
 };
 
 template<typename T>
@@ -60,6 +64,10 @@ struct RuntimeTag<T, std::void_t<decltype(T::type_name)>> {
 	inline static const RuntimeTagIdType GetId() {
 		static const RuntimeTagIdType id = SequentialIdGenerator::Id();
 		return id;
+	}
+
+	static constexpr bool IsIdAssigned() {
+		return true;
 	}
 
 };
