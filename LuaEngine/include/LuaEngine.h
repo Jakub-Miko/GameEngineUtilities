@@ -284,7 +284,7 @@ public:
 
 	//template function for easy lua function calls from c++, pushes the function onto the stack, pushes arguments, 
 	// calls functions, and pops and returns the return value if any. 
-	//In the case of a failure while calling return default value and asserts.
+	//In the case of a failure while calling return false.
 	template<typename R = void, typename ... Args>
 	bool TryCall(R* out,const char* function_name, Args ... args) {
 		if (LoadCall(this, function_name)) {
@@ -317,7 +317,7 @@ public:
 
 	//template function for easy lua function calls from c++, pushes the function onto the stack, pushes arguments, 
 	// calls functions, and pops and returns the return value if any. 
-	//In the case of a failure while calling return default value and asserts.
+	//In the case of a failure while calling return false.
 	//This can be called with unknown values within a variant at runtime
 	template<typename R = void, typename ... Args>
 	bool TryCallRuntime(R* out, const char* function_name, const std::vector<std::variant<Args...>>& args) {
@@ -351,7 +351,7 @@ public:
 
 	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
 	// calls functions, and pops and returns the return value if any. 
-	//In the case of a failure while calling return default value and asserts.
+	//In the case of a failure while calling return false.
 	template<typename R = void, typename ... Args>
 	bool TryCallObject(R* out,const char* table_name, const char* function_name, Args ... args) {
 		if (LoadCall(this, table_name, function_name)) {
@@ -384,7 +384,7 @@ public:
 
 	//template function for easy lua table function calls from c++, pushes the function onto the stack, pushes arguments, 
 	// calls functions, and pops and returns the return value if any. 
-	//In the case of a failure while calling return default value and asserts.
+	//In the case of a failure while calling return false.
 	//This can be called with unknown values within a variant at runtime
 	template<typename R = void, typename ... Args>
 	bool TryCallObjectRuntime(R* out, const char* table_name, const char* function_name, const std::vector<std::variant<Args...>>& args) {
