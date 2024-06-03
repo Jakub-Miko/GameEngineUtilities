@@ -71,3 +71,11 @@ bool ConfigManager::Exists(const std::string& name)
 
 	return root_object->Exists(name);
 }
+
+std::shared_ptr<ConfigObject> ConfigManager::GetObject(const std::string& name) {
+	return root_object->GetObject(name);
+}
+
+std::shared_ptr<ConfigObject> ConfigManager::GetArray(const std::string& name) {
+	return root_object->GetArray(name);
+}

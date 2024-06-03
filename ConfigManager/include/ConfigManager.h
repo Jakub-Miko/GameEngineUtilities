@@ -22,6 +22,8 @@ public:
 	virtual std::shared_ptr<ConfigObject> GetObject(int index) = 0;
 	virtual bool IsObject(const std::string& name) = 0;
 	virtual bool IsObject(int index) = 0;
+	virtual std::shared_ptr<ConfigObject> GetArray(const std::string& name) = 0;
+	virtual std::shared_ptr<ConfigObject> GetArray(int index) = 0;
 	virtual bool IsArray(const std::string& name) = 0;
 	virtual bool IsArray(int index) = 0;
 	virtual size_t GetArraySize() = 0;
@@ -44,6 +46,7 @@ public:
 	int GetInt(const std::string& name);
 	double GetFloat(const std::string& name);
 	std::shared_ptr<ConfigObject> GetObject(const std::string& name);
+	std::shared_ptr<ConfigObject> GetArray(const std::string& name);
 	bool Exists(const std::string& name);
 
 private:

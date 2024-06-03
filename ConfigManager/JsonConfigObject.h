@@ -22,6 +22,8 @@ public:
 	virtual std::shared_ptr<ConfigObject> GetObject(int index) override;
 	virtual bool IsObject(const std::string& name) override;
 	virtual bool IsObject(int index) override;
+	virtual std::shared_ptr<ConfigObject> GetArray(const std::string& name) override;
+	virtual std::shared_ptr<ConfigObject> GetArray(int index) override;
 	virtual bool IsArray(const std::string& name) override;
 	virtual bool IsArray(int index) override;
 	virtual size_t GetArraySize() override;

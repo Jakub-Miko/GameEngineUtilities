@@ -50,6 +50,26 @@ std::shared_ptr<ConfigObject> JsonConfigObject::GetObject(const std::string& nam
 	}
 }
 
+std::shared_ptr<ConfigObject> JsonConfigObject::GetArray(const std::string& name)
+{
+	if (json_object[name].is_array()) {
+		return std::make_shared<JsonConfigObject>(json_object[name]);
+	}
+	else {
+		throw std::runtime_error("config property isn't an object or doesn't exist");
+	}
+}
+
+std::shared_ptr<ConfigObject> JsonConfigObject::GetArray(int index)
+{
+	if (json_object[index].is_array()) {
+		return std::make_shared<JsonConfigObject>(json_object[index]);
+	}
+	else {
+		throw std::runtime_error("config property isn't an object or doesn't exist");
+	}
+}
+
 std::string JsonConfigObject::GetString(int index)
 {
 	if (json_object[index].is_string()) {
