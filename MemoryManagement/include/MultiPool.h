@@ -6,10 +6,10 @@
 #include "MemoryPoolDynamic.h"
 #include "MemoryManagementUtilities.h"
 
-template<typename Allocator = std::allocator<void>,bool stateful = false, bool deffered_deallocation = false>
+template<typename Allocator = std::allocator<void>,bool stateful = false, bool deferred_deallocation = false>
 class MultiPool : public std::pmr::memory_resource {
 public:
-	using Pool_type = MemoryPool<Allocator,stateful, deffered_deallocation>;
+	using Pool_type = MemoryPool<Allocator,stateful, deferred_deallocation>;
 private:
 	using Pool_entry_Allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<Pool_type>;
 

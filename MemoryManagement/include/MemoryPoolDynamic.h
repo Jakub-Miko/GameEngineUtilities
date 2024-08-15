@@ -6,7 +6,7 @@
 #include <cassert>
 #include "MemoryManagementUtilities.h"
 
-template<bool deffered,typename Pool>
+template<bool deferred,typename Pool>
 struct Chunk_impl {
 	Chunk_impl() : base(nullptr), capacity(0), block_size(0), available(0), next_available(0), freelist_head(nullptr) {}
 	typename Pool::block_alloc_unit* base;
@@ -32,10 +32,10 @@ struct Chunk_impl<true,Pool> {
 
 
 
-template<typename Allocator = std::allocator<void>, bool stateful = false, bool deffered_deallocation = false>
+template<typename Allocator = std::allocator<void>, bool stateful = false, bool deferred_deallocation = false>
 class MemoryPool {
 
-	static_assert(!(deffered_deallocation == true && stateful == false), "deffered_deallocation is only supported for stateful pools.");
+	static_assert(!(deferred_deallocation == true && stateful == false), "deferred_deallocation is only supported for stateful pools.");
 
 	struct free_block {
 		free_block(free_block* ptr) : next(ptr) {}
@@ -75,8 +75,8 @@ public:
 	std::mutex m_lock;
 	};
 
-	friend Chunk_impl<deffered_deallocation, MemoryPool<Allocator, stateful, deffered_deallocation>>;
-	using Chunk = Chunk_impl<deffered_deallocation, MemoryPool<Allocator,stateful, deffered_deallocation>>;
+	friend Chunk_impl<deferred_deallocation, MemoryPool<Allocator, stateful, deferred_deallocation>>;
+	using Chunk = Chunk_impl<deferred_deallocation, MemoryPool<Allocator,stateful, deferred_deallocation>>;
 
 private:
 
@@ -230,7 +230,7 @@ public:
 
 	//Should only be called in singlethread system, or from thread owning the pool!!!
 	void FlushDeallocations() {
-		if constexpr (deffered_deallocation) {
+		if constexpr (deferred_deallocation) {
 			std::lock_guard<std::mutex> lock(dealloc_flush_mutex);
 			for (auto chunk : m_Chunks) {
 				deallocation_list& dealloc_list = chunk->dealloc_list;
@@ -245,7 +245,7 @@ public:
 			}
 		}
 		else {
-			assert(false); //FlushDeallocations is only supported by deffered_deallocation enabled pool!!!
+			assert(false); //FlushDeallocations is only supported by deferred_deallocation enabled pool!!!
 		}
 	}
 
@@ -254,7 +254,7 @@ public:
 			chunk->freelist_head = nullptr;
 			chunk->next_available = 0;
 			chunk->available = chunk->capacity;
-			if constexpr (deffered_deallocation) {
+			if constexpr (deferred_deallocation) {
 				chunk.dealloc_list.clear();
 			}
 		}
@@ -279,7 +279,7 @@ public:
 	}
 
 	static bool deallocate_form_chunk(void* ptr, Chunk* chunk) {
-		if constexpr (deffered_deallocation) {
+		if constexpr (deferred_deallocation) {
 			chunk->dealloc_list.push_back(ptr);
 			return true;
 		}
