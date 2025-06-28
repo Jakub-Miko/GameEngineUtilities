@@ -48,7 +48,7 @@ public:
 	struct deallocation_list {
 		deallocation_list() : m_lock() {}
 		deallocation_list(const deallocation_list& ref) : m_lock(), head(ref.head), tail(ref.tail) {}
-		deallocation_list(deallocation_list&& ref) : head(ref.head), tail(ref.tail), m_lock(std::move(ref.lock)) {}
+		deallocation_list(deallocation_list&& ref) : head(ref.head), tail(ref.tail), m_lock(std::move(ref.m_lock)) {}
 		deallocation_list& operator=(const deallocation_list& ref) = delete;
 		deallocation_list& operator=(deallocation_list&& ref) = delete;
 
