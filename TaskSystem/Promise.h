@@ -3,10 +3,27 @@
 #include <utility>
 
 template<typename T>
+class Awaitable {
+public:
+	virtual T GetValue() const = 0;
+	virtual bool IsAvailable() = 0;
+	virtual void Wait() = 0;
+	virtual ~Awaitable() {}
+};
+
+template<>
+class Awaitable<void> {
+public:
+	virtual bool IsAvailable() = 0;
+	virtual void Wait() = 0;
+};
+
+
+template<typename T>
 class Promise;
 
 template<typename T>
-class Future {
+class Future : public Awaitable<T> {
 public:
 	friend class Promise<T>;
 	
@@ -32,15 +49,15 @@ public:
 		return *this;
 	}
 
-	~Future() {
+	virtual ~Future() {
 
 	}
 
-	T GetValue() const {
+	virtual T GetValue() const override {
 		return m_future.get();
 	}
 
-	void Wait() {
+	virtual void Wait() override {
 		m_future.wait();
 	}
 
@@ -48,7 +65,7 @@ public:
 		return m_future.valid();
 	}
 
-	bool IsAvailable() {
+	virtual bool IsAvailable() override {
 		return m_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
 	}
 
@@ -107,7 +124,7 @@ private:
 };
 
 template<>
-class Future<void> {
+class Future<void> : public Awaitable<void> {
 public:
 	friend class Promise<void>;
 
@@ -133,11 +150,11 @@ public:
 		return *this;
 	}
 
-	~Future() {
+	virtual ~Future() {
 
 	}
 
-	void Wait() {
+	virtual void Wait() override {
 		m_future.wait();
 	}
 
@@ -146,7 +163,7 @@ public:
 	}
 
 
-	bool IsAvailable() {
+	virtual bool IsAvailable() override {
 		return m_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
 	}
 
@@ -194,4 +211,47 @@ public:
 private:
 	std::promise<void> m_promise;
 
+};
+
+template<typename T>
+class CustomAwaitable : public Awaitable<T> {
+public:	
+	CustomAwaitable(std::function<void()> wait_func, std::function<bool()> is_available_func, std::function<T()> get_value_func) : wait_func(wait_func), is_available_func(is_available_func), get_value_func(get_value_func) {}
+
+	virtual T GetValue() const override {
+		return get_value_func();
+	}
+
+	virtual bool IsAvailable() override {
+		return is_available_func();
+	}
+
+	virtual void Wait() override {
+		wait_func();
+	}
+
+	virtual ~CustomAwaitable() {}
+public:
+	std::function<void()> wait_func;
+	std::function<bool()> is_available_func;
+	std::function<T()> get_value_func;
+};
+
+template<>
+class CustomAwaitable<void> : public Awaitable<void> {
+public:	
+	CustomAwaitable(std::function<void()> wait_func, std::function<bool()> is_available_func) : wait_func(wait_func), is_available_func(is_available_func) {}
+
+	virtual bool IsAvailable() override {
+		return is_available_func();
+	}
+
+	virtual void Wait() override {
+		wait_func();
+	}
+
+	virtual ~CustomAwaitable() {}
+public:
+	std::function<void()> wait_func;
+	std::function<bool()> is_available_func;
 };
