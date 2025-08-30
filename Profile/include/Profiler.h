@@ -9,6 +9,8 @@
 
 // Profiler class - singleton maintaining session and file writes to the .json file used with chrome://tracing
 
+#ifdef CHROME_TRACE
+
 class Profiler {
 private:
 	struct Session {
@@ -147,7 +149,6 @@ public:
 
 };
 
-// Macros for easy placement of timers and maintaining sessions, as well as for striping the code from release builds.
 
 #ifdef ENABLE_PROFILING
 	
@@ -170,4 +171,28 @@ public:
 	#define PROFILE_FUNCTION()
 	#define PROFILE_USAGE(line)
 	
+#endif
+
+#elif defined(NVTX)
+
+#ifdef ENABLE_PROFILING
+
+	#include <nvtx3/nvtx3.hpp>
+	#define BEGIN_PROFILING(name, path) 
+	#define END_PROFILING()
+	#define PROFILE(name) nvtx3::scoped_range r(nvtx3::event_attributes(name));
+	#define PROFILE_FUNCTION() NVTX3_FUNC_RANGE();
+	#define PROFILE_USAGE(line)
+	
+#else 
+	
+	#define BEGIN_PROFILING(name, path) 
+	#define END_PROFILING()
+	#define PROFILE(name) 
+	#define PROFILE_FUNCTION()
+	#define PROFILE_USAGE(line)
+	
+#endif
+
+
 #endif
