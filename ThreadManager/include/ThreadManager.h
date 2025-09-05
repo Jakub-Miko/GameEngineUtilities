@@ -58,17 +58,17 @@ public:
 
 	}
 	template<typename T>
-	void SetStateValue(T* value) {
+	void SetStateValue(std::shared_ptr<T> value) {
 		ThreadData.insert_or_assign(TypeId<T, SequentialIdGenerator>(), value);
 	}
 
 	template<typename T>
-	T* GetStateValue() {
+	std::shared_ptr<T> GetStateValue() {
 		auto res = ThreadData.find(TypeId<T, SequentialIdGenerator>());
 		if (res == ThreadData.end()) {
 			throw std::runtime_error("No state value of this type could be found");
 		}
-		return reinterpret_cast<T*>(res->second);
+		return std::static_pointer_cast<T>(res->second);
 	}
 
 	template<typename T>
@@ -91,7 +91,7 @@ private:
 
 private:
 	
-	std::map<int,void*> ThreadData;
+	std::map<int,std::shared_ptr<void>> ThreadData;
 
 };
 
@@ -120,12 +120,12 @@ public:
 	static std::shared_ptr<ThreadObject> GetCurrentThread();
 
 	template<typename T>
-	static T* GetThreadLocalData() {
+	static std::shared_ptr<T> GetThreadLocalData() {
 		return current_thread->GetStateValue<T>();
 	}
 
 	template<typename T>
-	static void SetThreadLocalData(T* data) {
+	static void SetThreadLocalData(std::shared_ptr<T> data) {
 		current_thread->SetStateValue<T>(data);
 	}
 
