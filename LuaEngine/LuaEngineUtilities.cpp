@@ -81,7 +81,7 @@ std::string LuaEngineUtilities::LoadScript(const std::string& path, bool constru
 
 std::string LuaEngineUtilities::ScriptHash(std::string script_path, bool construction)
 {
-    std::string path = FileManager::Get()->GetRelativeFilePath(FileManager::Get()->GetPath(script_path));
+    std::string path = FileManager::Get()->GetPath(script_path);
     std::replace(path.begin(), path.end(), '/', '_');
     std::replace(path.begin(), path.end(), '.', '_');
     std::replace(path.begin(), path.end(), '#', '_');

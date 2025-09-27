@@ -6,6 +6,8 @@
 #include <cstring>
 #include <sstream>
 
+#include "../../dependencies/glm/glm/gtx/dual_quaternion.hpp"
+
 FileManager* FileManager::instance = nullptr;
 
 void FileManager::Init(const FileManager_paths& paths)
@@ -23,7 +25,7 @@ void FileManager::Init()
 		throw std::runtime_error("If you don't specify explicit file paths, you  need to initialize ConfigManager before FileManager");
 	}
 
-	paths.root_path = FileManager::GetRelativeBinaryPath("/") + ConfigManager::Get()->GetString("root_path");
+	paths.root_path = FileManager::GetWorkDirPath("/") + ConfigManager::Get()->GetString("root_path");
 	paths.local_asset_path = paths.root_path + ConfigManager::Get()->GetString("local_asset_path");
 	paths.engine_asset_path = paths.root_path + ConfigManager::Get()->GetString("engine_asset_path");
 	paths.render_api_path = paths.root_path + ConfigManager::Get()->GetString("render_api_path");
@@ -49,81 +51,119 @@ FileManager* FileManager::Get()
 	return instance;
 }
 
-std::string FileManager::GetPath(const std::string& path)
+std::string FileManager::GetPath(const std::string& path, bool normalize)
 {
-	auto colon = path.find(':', 0);
-	
-	
-	if (colon != path.npos) {
-		auto directive = path.substr(0, colon);
-		auto file_path = path.substr(colon+1);
-		if (std::isupper(directive[0])) {
-			throw std::runtime_error("Invalid path format, first character of directive can't be uppercase. Make sure you are using relative paths");
-		}
-		if (directive == "asset") {
-			return std::filesystem::absolute(std::filesystem::path( GetAssetFilePath(file_path))).generic_string();
-		}
-		else if(directive == "engine_asset") {
-			return std::filesystem::absolute(std::filesystem::path(GetEngineAssetFilePath(file_path))).generic_string();
-		}
-		else if (directive == "api") {
-			return std::filesystem::absolute(std::filesystem::path(GetRenderApiAssetFilePath(file_path))).generic_string();
-		}
-		else if (directive == "absolute") {
-			return std::filesystem::absolute(std::filesystem::path(file_path)).generic_string();
-		}
-		else if (directive == "temp") {
-			return std::filesystem::absolute(std::filesystem::path(GetTempFilePath(file_path))).generic_string();
-		}
-		else {
-			throw std::runtime_error("Unknown directive " + directive);
-		}
-	}
-	else {
-		return std::filesystem::absolute(std::filesystem::path(GetRootPath() + std::string(path))).generic_string();
+	FilePrefixEnum prefix_type;
+	std::string path_portion = "";
+	auto type = GetFilePathType(path, &prefix_type, &path_portion);
+
+	std::string output_path = "";
+
+	switch (type)
+	{
+	case FilePathType::ABSOLUTE_PATH:
+		output_path = path;
+		break;
+	case FilePathType::RELATIVE_PATH :
+		output_path = path;
+		break;
+	case FilePathType::PREFIXED_PATH :
+		output_path = prefix_entries[(int)prefix_type].relative_path + path_portion;
+		break;
+	default:
+		throw std::runtime_error("Invalid filepath type in path: " + path + "\n");
 	}
 
-
-
+	if(normalize) {
+		return std::filesystem::path(output_path).lexically_normal().generic_string();
+	} else {
+		return output_path;
+	}
 }
 
-std::string FileManager::GetRelativeFilepath(const std::string& path)
+std::string FileManager::GetPathAbsolute(const std::string &path, bool normalize)
 {
-	return GetRootPath() + path;
+    FilePrefixEnum prefix_type;
+	std::string path_portion = "";
+	auto type = GetFilePathType(path, &prefix_type);
+
+	std::string output_path = "";
+
+	switch (type)
+	{
+	case FilePathType::ABSOLUTE_PATH:
+		output_path = path;
+		break;
+	case FilePathType::RELATIVE_PATH :
+		output_path = GetRootPath() + path;
+		break;
+	case FilePathType::PREFIXED_PATH :
+		output_path = prefix_entries[(int)prefix_type].absolute_path + path_portion;
+		break;
+	default:
+		throw std::runtime_error("Invalid filepath type in path: " + path + "\n");
+	}
+
+	if(normalize) {
+		return std::filesystem::path(output_path).lexically_normal().generic_string();
+	} else {
+		return output_path;
+	}
+}
+
+std::string FileManager::GetPathRelative(const std::string &path, bool normalize)
+{
+    	FilePrefixEnum prefix_type;
+	std::string path_portion = "";
+	auto type = GetFilePathType(path, &prefix_type);
+
+	std::string output_path = "";
+
+	switch (type)
+	{
+	case FilePathType::ABSOLUTE_PATH:
+		output_path = std::filesystem::path(path).lexically_relative(GetRootPath()).generic_string();
+		break;
+	case FilePathType::RELATIVE_PATH :
+		output_path = path;
+		break;
+	case FilePathType::PREFIXED_PATH :
+		output_path = prefix_entries[(int)prefix_type].relative_path + path_portion;
+		break;
+	default:
+		throw std::runtime_error("Invalid filepath type in path: " + path + "\n");
+	}
+
+	if(normalize) {
+		return std::filesystem::path(output_path).lexically_normal().generic_string();
+	} else {
+		return output_path;
+	}
 }
 
 std::string FileManager::GetRenderApiAssetFilePath(const std::string& path)
 {
-	return paths.render_api_path + path;
+	return prefix_entries[(int)FilePrefixEnum::RENDER_API_PATH].relative_path + path;
 }
 
 std::string FileManager::GetAssetFilePath(const std::string& path)
 {
-	return paths.local_asset_path + path;
+	return prefix_entries[(int)FilePrefixEnum::ASSET_PREFIX].relative_path + path;
 }
 
 std::string FileManager::GetTempFilePath(const std::string& path)
 {
-	return paths.temp_path + path;
+	return prefix_entries[(int)FilePrefixEnum::TEMP_PATH].relative_path + path;
 }
 
 std::string FileManager::GetEngineAssetFilePath(const std::string& path)
 {
-	return paths.engine_asset_path + path;
-}
-
-std::string FileManager::GetRelativeFilePath(const std::string& absolute_file_path)
-{
-	using namespace std::filesystem;
-	std::string rel_root = path(""_path).generic_string();
-	std::string abs = path(absolute_file_path).generic_string();
-
-	return abs.replace(abs.find(rel_root), rel_root.length(), "/");;
+	return prefix_entries[(int)FilePrefixEnum::ENGINE_ASSET_PATH].relative_path + path;
 }
 
 std::string FileManager::GetRootPath()
 {
-	return paths.root_path;
+	return absolute_root_path;
 }
 
 bool FileManager::IsSubPath(const std::string& file_path)
@@ -274,32 +314,122 @@ std::string FileManager::ResolvePath(const std::string& file_path)
 
 std::string FileManager::GetPathHash(const std::string& file_path)
 {
-	std::string path = GetRelativeFilePath(GetPath(file_path));
+	std::string path = GetPath(file_path, true);
 	std::replace(path.begin(), path.end(), '/', '_');
 	std::replace(path.begin(), path.end(), '.', '_');
 	std::replace(path.begin(), path.end(), '#', '_');
 	return path;
-
 }
 
 std::string FileManager::GetLibraryPath(const std::string& library_name)
 {
 #ifdef UNIX
-	return GetRelativeBinaryPath("/") + "lib" + library_name + ".so";
+	return binary_directory + "lib" + library_name + ".so";
 #elif defined(WIN32)
-	return GetRelativeBinaryPath("/") + library_name + ".dll";
+	return binary_directory + library_name + ".dll";
 #else 
 	static_assert(false, "Only Linux And Windows is currently supported");
 #endif
 }
 
-std::string FileManager::GetRelativeBinaryPath(const std::string& path)
+std::string FileManager::GetWorkDirPath(const std::string& path)
 {
 	return std::filesystem::current_path().generic_string() + path;
 }
 
-FileManager::FileManager(const FileManager_paths& paths) : paths(paths)
+FileManager::FilePathType FileManager::GetFilePathType(const std::string& path, FileManager::FilePrefixEnum* prefix_type, std::string* path_after_prefix)
 {
+    if(path.empty()) {
+		return FilePathType::RELATIVE_PATH;
+	}
+
+	if(path[0] == '/') {
+#ifdef WINDOWS
+        throw std::runtime_error("Linux format absolute paths cannot be used on windows.\n");
+#elif defined LINUX
+		return FilePathType::ABSOLUTE_PATH;
+#else
+		static_assert("Invalid Platform");
+#endif
+	}
+
+	int offset = -1;
+	for(int i = 0; i < max_prefix_size; i++) {
+		if(path[i] == ':') {
+			offset = i;
+			break;
+		}
+	}
+
+	if(offset == -1) {
+		return FilePathType::RELATIVE_PATH;
+	}
+
+	if(offset == 1) {
+#ifdef WINDOWS
+		return FilePathType::ABSOLUTE_PATH;
+#elif defined LINUX
+		throw std::runtime_error("Windows format absolute paths cannot be used on linux.\n");
+#else
+		static_assert("Invalid Platform");
+#endif
+	} 
+
+	for(int i = 0; i < (int)FilePrefixEnum::FILE_PREFIX_COUNT; i++) {
+		auto& entry = prefix_entries[i];
+		if(entry.prefix.size() != offset) {
+			continue;
+		}
+		auto prefix = path.substr(0, offset);
+		if(entry.prefix == prefix) {
+			if(prefix_type) {
+				*prefix_type = (FilePrefixEnum)i; 
+			}
+			if(path_after_prefix) {
+				*path_after_prefix = path.substr(offset + 1);
+			}
+			return FilePathType::PREFIXED_PATH;
+		}
+	}
+
+	throw std::runtime_error("Invalid file prefix.");
+
+}
+
+void FileManager::SetDirectoryPrefixPath(FilePrefixEnum entry, const std::string &absolute_path)
+{
+	auto normalized = std::filesystem::path(absolute_path).lexically_normal().generic_string();
+	prefix_entries[(int)entry].absolute_path = normalized;
+	prefix_entries[(int)entry].relative_path = std::filesystem::relative(normalized, GetRootPath()).generic_string() + "/";
+}
+
+FileManager::FileManager(const FileManager_paths &paths)
+{
+	binary_directory = std::filesystem::current_path().generic_string() + "/"; //Save the initial launch working directory as the binary directory
+	std::filesystem::current_path(paths.root_path); 
+
+	absolute_root_path = std::filesystem::weakly_canonical(std::filesystem::absolute(paths.root_path)).generic_string();
+
+	prefix_entries[(int)FilePrefixEnum::SCENE_PREFIX].prefix = "scene";
+	SetDirectoryPrefixPath(FilePrefixEnum::SCENE_PREFIX, paths.root_path);
+
+	prefix_entries[(int)FilePrefixEnum::ASSET_PREFIX].prefix = "asset";
+	SetDirectoryPrefixPath(FilePrefixEnum::ASSET_PREFIX, paths.local_asset_path);
+
+	prefix_entries[(int)FilePrefixEnum::ENGINE_ASSET_PATH].prefix = "engine_asset";
+	SetDirectoryPrefixPath(FilePrefixEnum::ENGINE_ASSET_PATH, paths.engine_asset_path);
+
+	prefix_entries[(int)FilePrefixEnum::RENDER_API_PATH].prefix = "api";
+	SetDirectoryPrefixPath(FilePrefixEnum::RENDER_API_PATH, paths.render_api_path);
+
+    prefix_entries[(int)FilePrefixEnum::TEMP_PATH].prefix = "temp";
+	SetDirectoryPrefixPath(FilePrefixEnum::TEMP_PATH, paths.temp_path);
+
+	max_prefix_size = prefix_entries[0].prefix.size();
+	for(int i = 1; i < (int)FilePrefixEnum::FILE_PREFIX_COUNT; i++) {
+		max_prefix_size = std::max(max_prefix_size, (int)prefix_entries[i].prefix.size());
+	}
+	max_prefix_size++; //Account for the colon
 
 }
 

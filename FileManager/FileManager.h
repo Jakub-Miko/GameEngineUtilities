@@ -15,6 +15,27 @@ using SectionList = typename std::template set<std::string>;
 class FileManager {
 public:
 
+	enum class FilePathType : char {
+		ABSOLUTE_PATH = 0,
+		RELATIVE_PATH = 1,
+		PREFIXED_PATH = 2
+	};
+	
+	enum class FilePrefixEnum : char {
+		SCENE_PREFIX = 0,
+		ASSET_PREFIX = 1,
+		ENGINE_ASSET_PATH = 2,
+		RENDER_API_PATH = 3,
+		TEMP_PATH = 4,
+		FILE_PREFIX_COUNT
+	};
+	
+	struct FilePrefix {
+		std::string prefix;
+		std::string relative_path;
+		std::string absolute_path;
+	};
+
 	FileManager(const FileManager& ref) = delete;
 	FileManager(FileManager&& ref) = delete;
 	FileManager& operator=(const FileManager& ref) = delete;
@@ -25,13 +46,13 @@ public:
 	static void Shutdown();
 	static FileManager* Get();
 
-	std::string GetPath(const std::string& path);
-	std::string GetRelativeFilepath(const std::string& path);
+	std::string GetPath(const std::string& path, bool normalize = false);
+	std::string GetPathAbsolute(const std::string& path, bool normalize = false);
+	std::string GetPathRelative(const std::string& path, bool normalize = false);
 	std::string GetRenderApiAssetFilePath(const std::string& path);
 	std::string GetAssetFilePath(const std::string& path);
 	std::string GetTempFilePath(const std::string& path);
 	std::string GetEngineAssetFilePath(const std::string& path);
-	std::string GetRelativeFilePath(const std::string& absolute_file_path);
 	std::string GetRootPath();
 
 	bool IsSubPath(const std::string& file_path);
@@ -46,11 +67,19 @@ public:
 	std::string GetPathHash(const std::string& file_path);
 	std::string GetLibraryPath(const std::string& library_name);
 
-	static std::string GetRelativeBinaryPath(const std::string& path);
+	static std::string GetWorkDirPath(const std::string& path);
+
+	FilePathType GetFilePathType(const std::string& path, FilePrefixEnum* prefix_type = nullptr, std::string* path_after_prefix = nullptr);
 
 private:
 	static FileManager* instance;
-	FileManager_paths paths;
+	FilePrefix prefix_entries[(int)FilePrefixEnum::FILE_PREFIX_COUNT];
+	std::string binary_directory;
+	std::string absolute_root_path;
+	int max_prefix_size = 15;
+
+	void SetDirectoryPrefixPath(FilePrefixEnum entry, const std::string& absolute_path);
+
 	FileManager(const FileManager_paths& paths);
 	~FileManager();
 };
