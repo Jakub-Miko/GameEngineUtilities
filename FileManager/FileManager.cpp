@@ -399,7 +399,7 @@ FileManager::FilePathType FileManager::GetFilePathType(const std::string& path, 
 void FileManager::SetDirectoryPrefixPath(FilePrefixEnum entry, const std::string &absolute_path)
 {
 	auto normalized = std::filesystem::path(absolute_path).lexically_normal().generic_string();
-	prefix_entries[(int)entry].absolute_path = normalized;
+	prefix_entries[(int)entry].absolute_path = normalized + "/";
 	prefix_entries[(int)entry].relative_path = std::filesystem::relative(normalized, GetRootPath()).generic_string() + "/";
 }
 
@@ -408,7 +408,7 @@ FileManager::FileManager(const FileManager_paths &paths)
 	binary_directory = std::filesystem::current_path().generic_string() + "/"; //Save the initial launch working directory as the binary directory
 	std::filesystem::current_path(paths.root_path); 
 
-	absolute_root_path = std::filesystem::weakly_canonical(std::filesystem::absolute(paths.root_path)).generic_string();
+	absolute_root_path = std::filesystem::weakly_canonical(std::filesystem::absolute(paths.root_path)).generic_string() + "/";
 
 	prefix_entries[(int)FilePrefixEnum::SCENE_PREFIX].prefix = "scene";
 	SetDirectoryPrefixPath(FilePrefixEnum::SCENE_PREFIX, paths.root_path);
