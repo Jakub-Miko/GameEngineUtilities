@@ -74,6 +74,7 @@ public:
 			return (*multi_pool).multipool.allocate(size, alignment);
 		}
 		assert(false); //Thread for pool isn't registered
+		return nullptr;
 	}
 
 	//Build deallocation list
