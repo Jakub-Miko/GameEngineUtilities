@@ -25,7 +25,15 @@ void FileManager::Init(const std::string& root_path)
 		throw std::runtime_error("If you don't specify explicit file paths, you  need to initialize ConfigManager before FileManager");
 	}
 
-	paths.root_path = root_path;
+	if(ConfigManager::Get()->Exists("root_path")) {
+		paths.root_path = (
+			std::filesystem::path(root_path) /
+			std::filesystem::path(ConfigManager::Get()->GetString("root_path"))
+			).lexically_normal().generic_string();
+	} else {
+		paths.root_path = root_path;
+	}
+
 	paths.local_asset_path = ConfigManager::Get()->GetString("local_asset_path");
 	paths.engine_asset_path = ConfigManager::Get()->GetString("engine_asset_path");
 	paths.render_api_path = ConfigManager::Get()->GetString("render_api_path");
