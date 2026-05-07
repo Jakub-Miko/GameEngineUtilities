@@ -17,7 +17,7 @@ void FileManager::Init(const FileManager_paths& paths)
 	}
 }
 
-void FileManager::Init()
+void FileManager::Init(const std::string& root_path)
 {
 	FileManager_paths paths;
 
@@ -25,11 +25,11 @@ void FileManager::Init()
 		throw std::runtime_error("If you don't specify explicit file paths, you  need to initialize ConfigManager before FileManager");
 	}
 
-	paths.root_path = FileManager::GetWorkDirPath("/") + ConfigManager::Get()->GetString("root_path");
-	paths.local_asset_path = paths.root_path + ConfigManager::Get()->GetString("local_asset_path");
-	paths.engine_asset_path = paths.root_path + ConfigManager::Get()->GetString("engine_asset_path");
-	paths.render_api_path = paths.root_path + ConfigManager::Get()->GetString("render_api_path");
-	paths.temp_path = paths.root_path + ConfigManager::Get()->GetString("temp_path");
+	paths.root_path = root_path;
+	paths.local_asset_path = ConfigManager::Get()->GetString("local_asset_path");
+	paths.engine_asset_path = ConfigManager::Get()->GetString("engine_asset_path");
+	paths.render_api_path = ConfigManager::Get()->GetString("render_api_path");
+	paths.temp_path = ConfigManager::Get()->GetString("temp_path");
 	if (!std::filesystem::exists(paths.temp_path)) {
 		std::filesystem::create_directory(paths.temp_path);
 	}
@@ -406,9 +406,9 @@ void FileManager::SetDirectoryPrefixPath(FilePrefixEnum entry, const std::string
 FileManager::FileManager(const FileManager_paths &paths)
 {
 	binary_directory = std::filesystem::current_path().generic_string() + "/"; //Save the initial launch working directory as the binary directory
-	std::filesystem::current_path(paths.root_path); 
+	std::filesystem::current_path(paths.root_path);
 
-	absolute_root_path = std::filesystem::weakly_canonical(std::filesystem::absolute(paths.root_path)).generic_string() + "/";
+	absolute_root_path = std::filesystem::weakly_canonical(std::filesystem::absolute(std::filesystem::current_path())).generic_string() + "/";
 
 	prefix_entries[(int)FilePrefixEnum::SCENE_PREFIX].prefix = "scene";
 	SetDirectoryPrefixPath(FilePrefixEnum::SCENE_PREFIX, paths.root_path);

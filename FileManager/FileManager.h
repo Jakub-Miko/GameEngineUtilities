@@ -42,7 +42,7 @@ public:
 	FileManager& operator=(FileManager&& ref) = delete;
 
 	static void Init(const FileManager_paths& paths);
-	static void Init();
+	static void Init(const std::string& root_path);
 	static void Shutdown();
 	static FileManager* Get();
 
