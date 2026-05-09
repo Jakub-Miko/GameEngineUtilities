@@ -333,7 +333,7 @@ std::string FileManager::GetLibraryPath(const std::string& library_name)
 {
 #ifdef UNIX
 	return binary_directory + "lib" + library_name + ".so";
-#elif defined(WIN32)
+#elif defined(WINDOWS)
 	return binary_directory + library_name + ".dll";
 #else 
 	static_assert(false, "Only Linux And Windows is currently supported");

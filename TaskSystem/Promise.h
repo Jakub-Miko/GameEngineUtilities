@@ -136,7 +136,7 @@ public:
 
 	}
 
-	Future(Future&& ref) : m_future(std::move(ref.m_future)) {
+	Future(Future&& ref) noexcept : m_future(std::move(ref.m_future)) {
 
 	}
 
@@ -181,7 +181,7 @@ public:
 
 	}
 
-	Promise(Promise&& ref) : m_promise(std::move(ref.m_promise)) {
+	Promise(Promise&& ref) noexcept : m_promise(std::move(ref.m_promise)) {
 
 	}
 
